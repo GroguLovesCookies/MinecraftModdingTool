@@ -3,19 +3,47 @@ from PyQt5.QtGui import QIcon
 import sys
 import os
 import json
+from id_generator import generate_random_id, validate_id
 
 
 SELECTED_TEMPLATE = 0
+CURRENT_PROJECT = ""
 def create_new_project():
     global menuWindow
     menuWindow.hide()
     print("New Project Created")
-    menuWindow = initalize_new_project_window()
+    menuWindow = initalize_project_creation_window()
     menuWindow.show()
 
 
 def open_new_project():
-    print("Open Project")
+    global menuWindow
+    menuWindow.hide()
+    print("Opening Created Project")
+    menuWindow = initalize_project_editing_window()
+    menuWindow.showMaximized()
+
+
+def open_project():
+    global menuWindow, CURRENT_PROJECT
+    print("Open Existing Project")
+    chosenPath = str(QFileDialog.getExistingDirectory(menuWindow, "Select Project", os.getcwd()))
+
+    if "properties.json" not in os.listdir(chosenPath):
+        return
+    with open(f"{chosenPath}/properties.json") as f:
+        properties = json.loads(f.read())
+        print(properties)
+        if "verification_id" not in properties.keys():
+            return
+        if not validate_id(properties["verification_id"]):
+            return
+    CURRENT_PROJECT = chosenPath
+    
+    menuWindow.hide()
+    menuWindow = initalize_project_editing_window()
+    menuWindow.showMaximized()
+    
 
 
 def get_project_id(fileTextbox, filepathTextbox, outputLabel):
@@ -35,6 +63,7 @@ def get_project_id(fileTextbox, filepathTextbox, outputLabel):
             
 
 def create_project_files(fileTextbox, filepathTextbox, outputLabel):
+    global SELECTED_TEMPLATE, CURRENT_PROJECT
     file_id = outputLabel.text()
     file_path = filepathTextbox.text()
     if file_id == "":
@@ -43,7 +72,9 @@ def create_project_files(fileTextbox, filepathTextbox, outputLabel):
         if os.path.isdir(file_path):
             os.mkdir(f"{file_path}/{file_id}")
             with open(f"{file_path}/{file_id}/properties.json", "w") as f:
-                f.write(json.dumps({"title": fileTextbox.text(), "template": SELECTED_TEMPLATE}))
+                f.write(json.dumps({"title": fileTextbox.text(), "template": SELECTED_TEMPLATE, "verification_id": generate_random_id()}))
+        CURRENT_PROJECT = f"{file_path}/{file_id}"
+        open_new_project()
 
 
 def change_selected_template(target):
@@ -59,7 +90,7 @@ def open_browse_new_project(outputTextbox):
     outputTextbox.setText(file)
 
 
-def initalize_new_project_window():
+def initalize_project_creation_window():
     newProjectWindow = QWidget()
     newProjectWindow.resize(1200, 800)
     newProjectWindow.setWindowTitle("New Project")
@@ -131,6 +162,19 @@ def initalize_new_project_window():
     return newProjectWindow
 
 
+def initalize_project_editing_window():
+    editProjectWindow = QWidget()
+
+    projectProperties = {}
+    if os.path.isdir(CURRENT_PROJECT):
+        with open(f"{CURRENT_PROJECT}/properties.json", "r") as f:
+            projectProperties = json.loads(f.read())
+    print(projectProperties)
+
+    editProjectWindow.setWindowTitle(projectProperties["title"])
+    
+    return editProjectWindow
+
 if __name__ == "__main__":
     menu_buttons = []
 
@@ -156,7 +200,7 @@ if __name__ == "__main__":
     menu_buttons.append(new_button)
 
     open_button = QPushButton("Open Project", menuWindow)
-    open_button.clicked.connect(open_new_project)
+    open_button.clicked.connect(open_project)
     windowLayout.addWidget(open_button, 2)
     menu_buttons.append(open_button)
 
