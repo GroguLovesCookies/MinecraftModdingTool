@@ -1,9 +1,11 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QLabel, QFileDialog, QRadioButton
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QLabel, QFileDialog, QRadioButton, QGridLayout, QSizePolicy
 from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt
 import sys
 import os
 import json
 from id_generator import generate_random_id, validate_id
+from handle_creations import *
 
 
 SELECTED_TEMPLATE = 0
@@ -162,7 +164,14 @@ def initalize_project_creation_window():
     return newProjectWindow
 
 
+def showWindow(inputWindow):
+    global menuWindow
+    menuWindow = inputWindow
+    menuWindow.show()
+
+
 def initalize_project_editing_window():
+    global menuWindow
     editProjectWindow = QWidget()
 
     projectProperties = {}
@@ -172,6 +181,23 @@ def initalize_project_editing_window():
     print(projectProperties)
 
     editProjectWindow.setWindowTitle(projectProperties["title"])
+    
+    createLayout = QGridLayout()
+    editProjectWindow.setLayout(createLayout)
+
+    addItemGroupButton = QPushButton("New Creative Mode Tab")
+    addItemGroupButton.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+    addItemGroupButton.clicked.connect(lambda: showWindow(create_new_item_group(menuWindow, CURRENT_PROJECT)))
+    createLayout.addWidget(addItemGroupButton, 0, 0, 1, 1)
+
+    addItemButton = QPushButton("New Item")
+    addItemButton.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+    createLayout.addWidget(addItemButton, 0, 1, 1, 1)
+
+    addBlockButton = QPushButton("New Block")
+    addBlockButton.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+    createLayout.addWidget(addBlockButton, 0, 2, 1, 1)
+
     
     return editProjectWindow
 
