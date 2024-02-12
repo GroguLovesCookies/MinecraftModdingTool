@@ -1,9 +1,11 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QLabel, QFileDialog
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QLabel, QFileDialog, QRadioButton
 from PyQt5.QtGui import QIcon
 import sys
 import os
+import json
 
 
+SELECTED_TEMPLATE = 0
 def create_new_project():
     global menuWindow
     menuWindow.hide()
@@ -40,6 +42,15 @@ def create_project_files(fileTextbox, filepathTextbox, outputLabel):
     else:
         if os.path.isdir(file_path):
             os.mkdir(f"{file_path}/{file_id}")
+            with open(f"{file_path}/{file_id}/properties.json", "w") as f:
+                f.write(json.dumps({"title": fileTextbox.text(), "template": SELECTED_TEMPLATE}))
+
+
+def change_selected_template(target):
+    global SELECTED_TEMPLATE
+    if SELECTED_TEMPLATE != target:
+        SELECTED_TEMPLATE = target 
+        print(SELECTED_TEMPLATE)
 
 
 def open_browse_new_project(outputTextbox):
@@ -59,12 +70,26 @@ def initalize_new_project_window():
     templatesWidget = QWidget(newProjectWindow)
     mainLayout.addWidget(templatesWidget)
 
-    templateLayout = QVBoxLayout(templatesWidget)
+    templateLayout = QFormLayout(templatesWidget)
     templatesWidget.setLayout(templateLayout)
-
-    templatePushButton = QPushButton("Template 1")
-    templateLayout.addWidget(templatePushButton)
     templatesWidget.setFixedWidth(500)
+
+    radioButtonTemplateOne = QRadioButton("Template 1")
+    templateLayout.addRow(radioButtonTemplateOne)
+    radioButtonTemplateOne.toggled.connect(lambda: change_selected_template(1))
+
+    radioButtonTemplateTwo = QRadioButton("Template 2")
+    templateLayout.addRow(radioButtonTemplateTwo)
+    radioButtonTemplateTwo.toggled.connect(lambda: change_selected_template(2))
+
+    radioButtonTemplateThree = QRadioButton("Template 3")
+    templateLayout.addRow(radioButtonTemplateThree)
+    radioButtonTemplateThree.toggled.connect(lambda: change_selected_template(3))
+
+    radioButtonNoTemplate = QRadioButton("No Template")
+    templateLayout.addRow(radioButtonNoTemplate)
+    radioButtonNoTemplate.setChecked(True)
+    radioButtonNoTemplate.toggled.connect(lambda: change_selected_template(0))
 
     detailsWidget = QWidget(newProjectWindow)
     mainLayout.addWidget(detailsWidget)
