@@ -8,8 +8,25 @@ from id_generator import generate_random_id, validate_id
 from handle_creations import *
 
 
-SELECTED_TEMPLATE = 0
 CURRENT_PROJECT = ""
+with open("previous_settings.json", "r") as f:
+    previous_settings = json.loads(f.read())
+    CURRENT_PROJECT = previous_settings["previous_project"]
+
+SELECTED_TEMPLATE = 0
+
+
+def set_current_project(target):
+    global CURRENT_PROJECT
+    CURRENT_PROJECT = target
+    with open("previous_settings.json", "r") as f:
+        previous_settings = json.loads(f.read())
+        previous_settings["previous_project"] = target
+        print(previous_settings)
+    with open("previous_settings.json", "w") as f:
+        f.write(json.dumps(previous_settings))
+
+
 def create_new_project():
     global menuWindow
     menuWindow.hide()
@@ -40,7 +57,7 @@ def open_project():
             return
         if not validate_id(properties["verification_id"]):
             return
-    CURRENT_PROJECT = chosenPath
+    set_current_project(chosenPath)
     
     menuWindow.hide()
     menuWindow = initalize_project_editing_window()
@@ -75,7 +92,7 @@ def create_project_files(fileTextbox, filepathTextbox, outputLabel):
             os.mkdir(f"{file_path}/{file_id}")
             with open(f"{file_path}/{file_id}/properties.json", "w") as f:
                 f.write(json.dumps({"title": fileTextbox.text(), "template": SELECTED_TEMPLATE, "verification_id": generate_random_id()}))
-        CURRENT_PROJECT = f"{file_path}/{file_id}"
+        set_current_project(f"{file_path}/{file_id}")
         open_new_project()
 
 
@@ -210,27 +227,31 @@ if __name__ == "__main__":
     menuWindow.resize(1200, 800)
     menuWindow.setWindowTitle("Minecraft Modding Tool")
     menuWindow.show()
+    if CURRENT_PROJECT == "":
+        windowParent = QWidget(menuWindow)
+        windowParent.resize(600, 600)
+        windowParent.show()
 
-    windowParent = QWidget(menuWindow)
-    windowParent.resize(600, 600)
-    windowParent.show()
+        windowLayout = QVBoxLayout(windowParent)
+        windowParent.setLayout(windowLayout)
 
-    windowLayout = QVBoxLayout(windowParent)
-    windowParent.setLayout(windowLayout)
+        windowParent.move(menuWindow.width()//2 - windowParent.width()//2, menuWindow.height()//2 - windowParent.height()//2)
 
-    windowParent.move(menuWindow.width()//2 - windowParent.width()//2, menuWindow.height()//2 - windowParent.height()//2)
+        new_button = QPushButton("+ New Project", menuWindow)
+        new_button.clicked.connect(create_new_project)
+        windowLayout.addWidget(new_button, 2)
+        menu_buttons.append(new_button)
 
-    new_button = QPushButton("+ New Project", menuWindow)
-    new_button.clicked.connect(create_new_project)
-    windowLayout.addWidget(new_button, 2)
-    menu_buttons.append(new_button)
+        open_button = QPushButton("Open Project", menuWindow)
+        open_button.clicked.connect(open_project)
+        windowLayout.addWidget(open_button, 2)
+        menu_buttons.append(open_button)
 
-    open_button = QPushButton("Open Project", menuWindow)
-    open_button.clicked.connect(open_project)
-    windowLayout.addWidget(open_button, 2)
-    menu_buttons.append(open_button)
-
-    for button in menu_buttons:
-        button.setFixedHeight(600//len(menu_buttons) - 10)
+        for button in menu_buttons:
+            button.setFixedHeight(600//len(menu_buttons) - 10)
+    else:
+        menuWindow.hide()
+        menuWindow = initalize_project_editing_window()
+        menuWindow.showMaximized()
 
     sys.exit(app.exec_())
