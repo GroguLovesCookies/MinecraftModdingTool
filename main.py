@@ -204,6 +204,7 @@ def initalize_project_editing_window():
 
     addItemButton = QPushButton("New Item")
     addItemButton.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+    addItemButton.clicked.connect(lambda: showWindow(create_new_item(menuWindow, CURRENT_PROJECT), True))
     createLayout.addWidget(addItemButton, 0, 1, 1, 1)
 
     addBlockButton = QPushButton("New Block")

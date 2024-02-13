@@ -64,12 +64,14 @@ class QForm(QWidget):
 
 
 class QFilePathBox(QWidget):
-    def __init__(self, fileDialogTitle, folderIcon, filepathCallback, *args, **kwargs):
+    def __init__(self, fileDialogTitle, folderIcon, filepathCallback, filter="", directory=True, *args, **kwargs):
         super(QFilePathBox, self).__init__(*args, **kwargs)
 
         self.fileDialogTitle = fileDialogTitle
         self.folderIcon = folderIcon
         self.filepathCallback = filepathCallback
+        self.filter = filter
+        self.directory = directory
 
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
@@ -90,7 +92,10 @@ class QFilePathBox(QWidget):
         return self.filepathLineEdit.text()
 
     def onBrowse(self):
-        file = str(QFileDialog.getExistingDirectory(self, self.fileDialogTitle, self.text()))
+        if self.directory:
+            file = str(QFileDialog.getExistingDirectory(self, self.fileDialogTitle, self.text()))
+        else:
+            file = str(QFileDialog.getOpenFileName(self, self.fileDialogTitle, self.text(), self.filter)[0])
         self.filepathLineEdit.setText(file)
 
     def getLineEdit(self):
