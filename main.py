@@ -22,7 +22,6 @@ def set_current_project(target):
     with open("previous_settings.json", "r") as f:
         previous_settings = json.loads(f.read())
         previous_settings["previous_project"] = target
-        print(previous_settings)
     with open("previous_settings.json", "w") as f:
         f.write(json.dumps(previous_settings))
 
@@ -32,7 +31,7 @@ def create_new_project():
     menuWindow.hide()
     print("New Project Created")
     menuWindow = initalize_project_creation_window()
-    menuWindow.show()
+    showWindow(menuWindow)
 
 
 def open_new_project():
@@ -40,7 +39,7 @@ def open_new_project():
     menuWindow.hide()
     print("Opening Created Project")
     menuWindow = initalize_project_editing_window()
-    menuWindow.showMaximized()
+    showWindow(menuWindow, True)
 
 
 def open_project():
@@ -61,7 +60,7 @@ def open_project():
     
     menuWindow.hide()
     menuWindow = initalize_project_editing_window()
-    menuWindow.showMaximized()
+    showWindow(menuWindow, True)
     
 
 
@@ -151,7 +150,10 @@ def initalize_project_creation_window():
     formLayout.addRow("Project Name:", nameLineEdit)
 
     savePathLabel = QLabel(detailsWidget)
-    formLayout.addRow("Save ID:", savePathLabel)
+    savePathIdentifier = QLabel("Save ID:", detailsWidget)
+    formLayout.addRow(savePathIdentifier, savePathLabel)
+    savePathLabel.setObjectName("savePath")
+    savePathIdentifier.setObjectName("savePathIdentifier")
 
     filepathContainer = QWidget(detailsWidget)
     filepathLineEdit = QLineEdit(detailsWidget)
@@ -181,10 +183,14 @@ def initalize_project_creation_window():
     return newProjectWindow
 
 
-def showWindow(inputWindow):
+def showWindow(inputWindow, maximized=False):
     global menuWindow
     menuWindow = inputWindow
-    menuWindow.show()
+    menuWindow.setObjectName("mainWindow")
+    if not maximized:
+        menuWindow.show()
+    else:
+        menuWindow.showMaximized()
 
 
 def initalize_project_editing_window():
@@ -222,11 +228,20 @@ if __name__ == "__main__":
     menu_buttons = []
 
     app = QApplication(sys.argv)
+    
 
     menuWindow = QWidget()
+    menuWindow.setAutoFillBackground(True)
     menuWindow.resize(1200, 800)
     menuWindow.setWindowTitle("Minecraft Modding Tool")
-    menuWindow.show()
+    showWindow(menuWindow)
+    app.setStyleSheet("QWidget { font-family: serif; color: #b8b8b8; font-size: 25px; } \
+                        QPushButton { padding: 10px; border: 4px double black; } \
+                        QPushButton:hover { background-color: #333; } \
+                        #mainWindow { background-color: #222; } \
+                        QLineEdit { background-color: transparent; border: none; border-bottom: 2px solid black; padding: 5px; } \
+                        QLineEdit:focus { border-bottom: 2px solid #32a89d; } \
+                        QLineEdit:hover { background-color: #333; } ")
     if CURRENT_PROJECT == "":
         windowParent = QWidget(menuWindow)
         windowParent.resize(600, 600)
@@ -249,9 +264,10 @@ if __name__ == "__main__":
 
         for button in menu_buttons:
             button.setFixedHeight(600//len(menu_buttons) - 10)
+            button.raise_()
     else:
         menuWindow.hide()
         menuWindow = initalize_project_editing_window()
-        menuWindow.showMaximized()
+        showWindow(menuWindow, True)
 
     sys.exit(app.exec_())
