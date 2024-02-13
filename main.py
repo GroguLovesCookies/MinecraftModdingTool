@@ -1,11 +1,12 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QLabel, QFileDialog, QRadioButton, QGridLayout, QSizePolicy
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon, QRegExpValidator
+from PyQt5.QtCore import Qt, QRegExp
 import sys
 import os
 import json
 from id_generator import generate_random_id, validate_id
 from handle_creations import *
+from form import QForm, QFilePathBox
 
 
 CURRENT_PROJECT = ""
@@ -64,10 +65,11 @@ def open_project():
     
 
 
-def get_project_id(fileTextbox, filepathTextbox, outputLabel):
-    first_id = "_".join(fileTextbox.text().lower().split())
+def get_project_id(form):
+    values = form.getValues()
 
-    path = filepathTextbox.text()
+    first_id = "_".join(values["name"].lower().split())
+    path = values["saveDirectory"]
     if os.path.isdir(path):
         needs_new = first_id in os.listdir(path)
         i = 1
@@ -77,20 +79,22 @@ def get_project_id(fileTextbox, filepathTextbox, outputLabel):
             if not needs_new:
                 first_id = new_id
             i += 1
-        outputLabel.setText(first_id)
+        form.setValues({"saveID": first_id})
             
 
-def create_project_files(fileTextbox, filepathTextbox, outputLabel):
+def create_project_files(form):
     global SELECTED_TEMPLATE, CURRENT_PROJECT
-    file_id = outputLabel.text()
-    file_path = filepathTextbox.text()
+
+    values = form.getValues()
+    file_id = values["saveID"]
+    file_path = values["saveDirectory"]
     if file_id == "":
         return
     else:
         if os.path.isdir(file_path):
             os.mkdir(f"{file_path}/{file_id}")
             with open(f"{file_path}/{file_id}/properties.json", "w") as f:
-                f.write(json.dumps({"title": fileTextbox.text(), "template": SELECTED_TEMPLATE, "verification_id": generate_random_id()}))
+                f.write(json.dumps({"title": values["name"], "template": SELECTED_TEMPLATE, "verification_id": generate_random_id()}))
         set_current_project(f"{file_path}/{file_id}")
         open_new_project()
 
@@ -140,45 +144,25 @@ def initalize_project_creation_window():
     radioButtonNoTemplate.setChecked(True)
     radioButtonNoTemplate.toggled.connect(lambda: change_selected_template(0))
 
-    detailsWidget = QWidget(newProjectWindow)
+    detailsWidget = QForm(create_project_files, newProjectWindow)
     mainLayout.addWidget(detailsWidget)
     detailsWidget.setFixedWidth(680)
 
-    formLayout = QFormLayout()
+    nameLineEdit = detailsWidget.addRow("Project Name:", "name")
+    savePathLabel = detailsWidget.addLabelRow("Save ID:", "-", "saveID")
+    filepathBox = detailsWidget.addWidgetRow("Save At:", QFilePathBox("Select Directory", "folder.png", lambda x: x), "saveDirectory")
+    modIdLineEdit = detailsWidget.addRow("Mod ID:", "modID")
+    detailsWidget.addSubmitButtonRow("Create Project")
+
+    modIdValidator = QRegExpValidator(QRegExp("[a-z_]+"))
+    detailsWidget.addValidator(modIdValidator, modIdLineEdit)
     
-    nameLineEdit = QLineEdit(detailsWidget)
-    formLayout.addRow("Project Name:", nameLineEdit)
 
-    savePathLabel = QLabel(detailsWidget)
-    savePathIdentifier = QLabel("Save ID:", detailsWidget)
-    formLayout.addRow(savePathIdentifier, savePathLabel)
-    savePathLabel.setObjectName("savePath")
-    savePathIdentifier.setObjectName("savePathIdentifier")
+    filepathLineEdit = filepathBox.getLineEdit()
+    filepathLineEdit.textChanged.connect(lambda: get_project_id(detailsWidget))
+    nameLineEdit.textChanged.connect(lambda: get_project_id(detailsWidget))
 
-    filepathContainer = QWidget(detailsWidget)
-    filepathLineEdit = QLineEdit(detailsWidget)
-    filepathLineEdit.setText(os.getcwd())
-
-    filepathBrowseButton = QPushButton()
-    filepathBrowseButton.setIcon(QIcon("folder.png"))
-    filepathBrowseButton.clicked.connect(lambda:open_browse_new_project(filepathLineEdit))
-    filepathLineEdit.textChanged.connect(lambda: get_project_id(nameLineEdit, filepathLineEdit, savePathLabel))
-    nameLineEdit.textChanged.connect(lambda: get_project_id(nameLineEdit, filepathLineEdit, savePathLabel))
-
-    filepathLayout = QHBoxLayout(filepathContainer)
-    filepathContainer.setLayout(filepathLayout)
-
-    filepathLayout.addWidget(filepathLineEdit)
-    filepathLayout.addWidget(filepathBrowseButton)
-
-    formLayout.addRow("File Path:", filepathContainer)
-
-    createButton = QPushButton("Create Project")
-    formLayout.addRow(createButton)
-    createButton.clicked.connect(lambda: create_project_files(nameLineEdit, filepathLineEdit, savePathLabel))
-    createButton.clicked.connect(lambda: get_project_id(nameLineEdit, filepathLineEdit, savePathLabel))
-
-    detailsWidget.setLayout(formLayout)
+    detailsWidget.setValues({"saveDirectory": os.getcwd()})
 
     return newProjectWindow
 
