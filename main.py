@@ -94,7 +94,12 @@ def create_project_files(form):
         if os.path.isdir(file_path):
             os.mkdir(f"{file_path}/{file_id}")
             with open(f"{file_path}/{file_id}/properties.json", "w") as f:
-                f.write(json.dumps({"title": values["name"], "template": SELECTED_TEMPLATE, "verification_id": generate_random_id()}))
+                f.write(json.dumps({
+                    "title": values["name"], 
+                    "template": SELECTED_TEMPLATE, 
+                    "verification_id": generate_random_id(),
+                    "mod_id": values["modID"]
+                }))
         set_current_project(f"{file_path}/{file_id}")
         open_new_project()
 
