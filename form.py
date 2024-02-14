@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFormLayout, QFileDialog
 from PyQt5.QtGui import QIcon, QRegExpValidator, QValidator
+import os
 
 
 class QForm(QWidget):
@@ -26,6 +27,10 @@ class QForm(QWidget):
     def addWidgetRow(self, labelText, widget, fieldID):
         self.layout.addRow(labelText, widget)
         self.fields[fieldID] = widget
+        return widget
+
+    def addWidgetWithoutField(self, widget):
+        self.layout.addRow(widget)
         return widget
 
     def addLabelRow(self, labelLabel, labelText, fieldID):
@@ -103,3 +108,7 @@ class QFilePathBox(QWidget):
     
     def getBrowseButton(self):
         return self.browseButton
+
+    def setIcon(self, path):
+        if os.path.isfile(path):
+            self.browseButton.setIcon(QIcon(path))

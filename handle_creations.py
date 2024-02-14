@@ -2,7 +2,7 @@ import os
 import json
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QFormLayout, QPushButton, QLabel, QLineEdit, QWidget
 from PyQt5.QtCore import QRegExp
-from PyQt5.QtGui import QRegExpValidator
+from PyQt5.QtGui import QRegExpValidator, QPixmap
 from form import QForm, QFilePathBox
 import shutil
 
@@ -71,13 +71,17 @@ def initialize_item_creator_window(current_project):
 
     nameLineEdit = mainWidget.addRow("Item Name:", "name")
     idLineEdit = mainWidget.addRow("Custom ID:", "id")
-    imagePickerWidget = mainWidget.addWidgetRow("Item Texture:", QFilePathBox("Choose Texture", "folder.png", lambda x: x, "Images (*.png *.jpg)", False), "texturePath")
+    imagePickerWidget = mainWidget.addWidgetRow("Item Texture:", QFilePathBox("Choose Texture", "folder.png", lambda x: x, "Images (*.png)", False), "texturePath")
     mainWidget.addSubmitButtonRow("Create Item")
 
     nameLineEdit.textChanged.connect(lambda: idLineEdit.setText(get_valid_id(nameLineEdit)))
+    imagePickerWidget.getLineEdit().textChanged.connect(lambda: imagePickerWidget.setIcon(imagePickerWidget.text()))
 
     idValidator = QRegExpValidator(QRegExp("[a-z_]+"))
     mainWidget.addValidator(idValidator, idLineEdit)
+
+    itemGroupChooseWidget = QWidget()
+    mainLayout.addWidget(itemGroupChooseWidget)
 
     return itemCreatorWindow
 
