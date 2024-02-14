@@ -231,7 +231,11 @@ if __name__ == "__main__":
                         #mainWindow { background-color: #222; } \
                         QLineEdit { background-color: transparent; border: none; border-bottom: 2px solid black; padding: 5px; } \
                         QLineEdit:focus { border-bottom: 2px solid #32a89d; } \
-                        QLineEdit:hover { background-color: #333; } ")
+                        QLineEdit:hover { background-color: #333; } \
+                        #itemGroupChoiceHeading { font-size: 40px; margin-bottom: 5px; }  \
+                        QCheckBox::indicator { width: 20px; height: 20px; background-color: transparent; border: 2px solid black; margin-top: 4px; } \
+                        QCheckBox::indicator:checked { background-color: #32a89d; }")
+    
     if CURRENT_PROJECT == "":
         windowParent = QWidget(menuWindow)
         windowParent.resize(600, 600)
