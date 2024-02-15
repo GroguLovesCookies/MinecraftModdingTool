@@ -166,7 +166,7 @@ class QItemSelectorWindow(QMainWindow):
     def get_item_ids(self):
         self.items.clear()
         for item in self.order_file:
-            if False not in [filter_function(item) for filter_function in self.filters] and self.search_filter(item):
+            if True in [filter_function(item) for filter_function in self.filters] and self.search_filter(item):
                 self.items.append(item)
 
     def update_display(self):
@@ -194,7 +194,6 @@ class QItemSelectorWindow(QMainWindow):
                 starButton.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/star.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
             else:
                 starButton.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/fullStar.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
-                print(item)
                 starButton.setChecked(True)
             self.starBoxes.append(starButton)
 
