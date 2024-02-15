@@ -134,6 +134,13 @@ class QItemSelectorWindow(QMainWindow):
         self.get_item_ids()
         self.initialize_items()
 
+    def prepare_favourite_order(self):
+        temp_file = self.order_file[:]
+        for item in self.favourites:
+            temp_file.remove(item)
+            temp_file.insert(0, item)
+        return temp_file
+
     def load_favourites(self):
         with open("favourites.json", "r") as f:
             self.favourites = json.loads(f.read())["data"]
@@ -161,11 +168,13 @@ class QItemSelectorWindow(QMainWindow):
         for checkbox in self.filterCheckboxes:
             if checkbox.checkState() == 2:
                 self.filters.append(QItemSelectorWindow.filters[checkbox.objectName()])
+        if len(self.filters) == 0:
+            self.filters.append(lambda x: True)
         self.update_display()
 
     def get_item_ids(self):
         self.items.clear()
-        for item in self.order_file:
+        for item in self.prepare_favourite_order():
             if True in [filter_function(item) for filter_function in self.filters] and self.search_filter(item):
                 self.items.append(item)
 

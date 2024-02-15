@@ -1,10 +1,6 @@
 import json
 
 
-FAVOURITES = []
-with open("favourites.json", "r") as f:
-    FAVOURITES = json.loads(f.read())["data"]
-
 def armor_trim_filter(x):
     return "armor_trim" in x
 
@@ -36,4 +32,7 @@ def buckets_filter(x):
     return x.endswith("_bucket")
 
 def favourites_filter(x):
+    FAVOURITES = []
+    with open("favourites.json", "r") as f:
+        FAVOURITES = json.loads(f.read())["data"]
     return x in FAVOURITES
