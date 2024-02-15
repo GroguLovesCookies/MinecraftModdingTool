@@ -17,9 +17,10 @@ def get_valid_id(inputLineEdit):
     return "_".join(text.lower().split())
 
 
-def create_new_item_group_file(idLineEdit, nameLineEdit, current_project):
-    name = nameLineEdit.text()
-    group_id = idLineEdit.text()
+def create_new_item_group_file(form):
+    values = form.getValues()
+    name = values["name"]
+    group_id = values["id"]
     if not os.path.isdir(f"{current_project}/item_groups"):
         os.mkdir(f"{current_project}/item_groups")
     with open(f"{current_project}/item_groups/{group_id}.json", "w") as f:
@@ -35,20 +36,17 @@ def initialize_item_group_creator_window(current_project):
     mainLayout = QHBoxLayout()
     itemGroupCreatorWindow.setLayout(mainLayout)
 
-    formWidget = QWidget()
+    formWidget = QForm()
     formLayout = QFormLayout()
     formWidget.setLayout(formLayout)
     mainLayout.addWidget(formWidget)
 
-    nameLineEdit = QLineEdit()
-    formLayout.addRow("Name:", nameLineEdit)
+    nameLineEdit = formWidget.addRow("Name:", "name")
+    idLineEdit = formLayout.addRow("Custom ID:", "id")
 
-    idLineEdit = QLineEdit()
-    formLayout.addRow("Custom ID:", idLineEdit)
     nameLineEdit.textChanged.connect(lambda: idLineEdit.setText(get_valid_id(nameLineEdit)))
 
-    submitButton = QPushButton("Create")
-    formLayout.addRow(submitButton)
+    submitButton = formWidget.addSubmitButtonRow("Create")
     submitButton.clicked.connect(lambda:create_new_item_group_file(idLineEdit, nameLineEdit, current_project))
 
     return itemGroupCreatorWindow

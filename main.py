@@ -7,6 +7,7 @@ import json
 from id_generator import generate_random_id, validate_id
 from handle_creations import *
 from form import QForm, QFilePathBox
+from item_browser import QVanillaItemIcon, QItemSelectorWindow
 
 
 CURRENT_PROJECT = ""
@@ -15,7 +16,12 @@ with open("previous_settings.json", "r") as f:
     CURRENT_PROJECT = previous_settings["previous_project"]
 
 SELECTED_TEMPLATE = 0
+SELECTED_ITEMS = []
 
+def get_chosen_items(items):
+    global SELECTED_ITEMS
+    SELECTED_ITEMS = items
+    print(SELECTED_ITEMS)
 
 def set_current_project(target):
     global CURRENT_PROJECT
@@ -228,7 +234,7 @@ if __name__ == "__main__":
     app.setStyleSheet("QWidget { font-family: serif; color: #b8b8b8; font-size: 25px; } \
                         QPushButton { padding: 10px; border: 4px double black; } \
                         QPushButton:hover { background-color: #333; } \
-                        #mainWindow { background-color: #222; } \
+                        #mainWindow, #itemSelectorWindow { background-color: #222; } \
                         QLineEdit { background-color: transparent; border: none; border-bottom: 2px solid black; padding: 5px; } \
                         QLineEdit:focus { border-bottom: 2px solid #32a89d; } \
                         QLineEdit:hover { background-color: #333; } \
@@ -255,6 +261,13 @@ if __name__ == "__main__":
         open_button.clicked.connect(open_project)
         windowLayout.addWidget(open_button, 2)
         menu_buttons.append(open_button)
+        
+        selection = QItemSelectorWindow(lambda x: True, "Select", 1200, 800, "wiki_order.json", 5, get_chosen_items)
+        selection.setObjectName("itemSelectorWindow")
+        selection.setStyleSheet("background-color: #222;")
+
+        # icon = QVanillaItemIcon("redstone", (32, 32))
+        # windowLayout.addWidget(icon)
 
         for button in menu_buttons:
             button.setFixedHeight(600//len(menu_buttons) - 10)
