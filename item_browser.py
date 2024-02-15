@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QFormLayout, QScrollArea, QMainWindow, QLineEdit, QPushButton, QHBoxLayout, QComboBox, QCheckBox
-from PyQt5.QtGui import QImage, QPixmap, QColor
+from PyQt5.QtGui import QImage, QPixmap, QColor, QIcon
 import json
+import item_filters
 
 
 def get_sprite_key():
@@ -58,12 +59,14 @@ class QItemSelectorWindow(QMainWindow):
     "bamboo_chest_raft": "bamboo_raft_with_chest", "experience_bottle": "bottle_o'_enchanting", "leather_chestplate": "leather_tunic", "leather_helmet": "leather_cap",
     "leather_leggings": "leather_pants"}
     notCapitalized = ["of", "with", "and"]
-    name_to_order = {"Default Order": "defualt_order", "Wiki Order": "wiki_order.json"}
+    filters = {"Favourites": item_filters.favourites_filter,"Armor Trims": item_filters.armor_trim_filter, "Smithing Templates": item_filters.smithing_template_filter, 
+    "Pottery Sherds": item_filters.pottery_sherd_filter, "Spawn Eggs": item_filters.spawn_egg_filter, "Tools": item_filters.tools_filter,  "Armor": item_filters.armor_filter, 
+    "Music Discs": item_filters.music_disc_filter, "Boats": item_filters.boats_filter, "Minecarts": item_filters.minecarts_filter, "Buckets": item_filters.buckets_filter}
 
-    def __init__(self, filter, title, w, h, order_file="wiki_order.json", limit=-1, quit_function=lambda x: x):
+    def __init__(self, filters, title, w, h, order_file="wiki_order.json", limit=-1, quit_function=lambda x: x):
         super().__init__()
 
-        self.filter = filter
+        self.filters = filters
         self.search_filter = lambda x: True
         self.setWindowTitle(title)
         self.show()
@@ -71,6 +74,15 @@ class QItemSelectorWindow(QMainWindow):
         self.quit_function = quit_function
 
         self.checkboxes = []
+        self.filterCheckboxes = []
+        self.starBoxes = []
+        self.favourites = []
+
+        self.mainWidget = QWidget()
+        self.setCentralWidget(self.mainWidget)
+
+        self.mainLayout = QHBoxLayout()
+        self.mainWidget.setLayout(self.mainLayout)
 
         self.layout =  QFormLayout()
 
@@ -91,6 +103,7 @@ class QItemSelectorWindow(QMainWindow):
 
         self.finishedButton = QPushButton("Done")
         self.finishedButton.clicked.connect(self.return_values)
+        self.finishedButton.setObjectName("hoverableButton")
         self.searchLayout.addWidget(self.finishedButton)
 
         self.layout.addRow("Search:", self.searchTools)
@@ -100,22 +113,60 @@ class QItemSelectorWindow(QMainWindow):
         
         self.scrollArea = QScrollArea(self)
         self.scrollContent = QWidget(self.scrollArea)
+        self.scrollContent.setObjectName("scroll")
         self.scrollContent.setLayout(self.layout)
         self.scrollArea.setWidgetResizable(True)
         self.order_file = QItemSelectorWindow.getOrderFile(order_file)
 
-        self.setCentralWidget(self.scrollArea)
+        self.mainLayout.addWidget(self.scrollArea, 75)
 
         self.scrollArea.setWidget(self.scrollContent)
+
+        self.settingsArea = QWidget()
+        self.settingsLayout = QFormLayout()
+        self.settingsArea.setLayout(self.settingsLayout)
+        self.mainLayout.addWidget(self.settingsArea, 25)
+
+        self.load_favourites()
+
+        self.initialize_filters()
 
         self.get_item_ids()
         self.initialize_items()
 
+    def load_favourites(self):
+        with open("favourites.json", "r") as f:
+            self.favourites = json.loads(f.read())["data"]
+
+    def initialize_filters(self):
+        filterHeading = QLabel("Filter Only...")
+        filterHeading.setObjectName("itemGroupChoiceHeading")
+        self.settingsLayout.addWidget(filterHeading)
+        for filter_name in QItemSelectorWindow.filters.keys():
+            checkWidget = QWidget()
+            checkLayout = QHBoxLayout()
+            checkWidget.setLayout(checkLayout)
+
+            checkLayout.addWidget(QLabel(filter_name), 90)
+            checkbox = QCheckBox()
+            checkbox.setObjectName(filter_name)
+            self.filterCheckboxes.append(checkbox)
+            checkbox.toggled.connect(self.toggle_filter)
+            checkLayout.addWidget(checkbox, 10)
+
+            self.settingsLayout.addWidget(checkWidget)
+
+    def toggle_filter(self):
+        self.filters.clear()
+        for checkbox in self.filterCheckboxes:
+            if checkbox.checkState() == 2:
+                self.filters.append(QItemSelectorWindow.filters[checkbox.objectName()])
+        self.update_display()
 
     def get_item_ids(self):
         self.items.clear()
         for item in self.order_file:
-            if self.filter(item) and self.search_filter(item):
+            if False not in [filter_function(item) for filter_function in self.filters] and self.search_filter(item):
                 self.items.append(item)
 
     def update_display(self):
@@ -125,6 +176,8 @@ class QItemSelectorWindow(QMainWindow):
         self.initialize_items()
 
     def initialize_items(self):
+        self.checkboxes.clear()
+        self.starBoxes.clear()
         for item in self.items:
             itemRow = QHBoxLayout()
             itemIcon = QVanillaItemIcon(item, (32, 32))
@@ -133,10 +186,22 @@ class QItemSelectorWindow(QMainWindow):
             itemChosen.setObjectName(item)
             self.checkboxes.append(itemChosen)
             itemChosen.toggled.connect(self.toggle_item)
+            starButton = QPushButton()
+            starButton.setObjectName(item)
+            starButton.setCheckable(True)
+            starButton.clicked.connect(self.toggle_favourites)
+            if item not in self.favourites:
+                starButton.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/star.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
+            else:
+                starButton.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/fullStar.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
+                print(item)
+                starButton.setChecked(True)
+            self.starBoxes.append(starButton)
 
             itemRow.addWidget(itemIcon, 5)
-            itemRow.addWidget(itemLabel, 90)
+            itemRow.addWidget(itemLabel, 85)
             itemRow.addWidget(itemChosen, 5)
+            itemRow.addWidget(starButton, 5)
 
             self.layout.addRow(itemRow)
 
@@ -160,10 +225,27 @@ class QItemSelectorWindow(QMainWindow):
                 if checkbox.checkState() == 2 and checkbox.objectName() != item_added:
                     checkbox.setChecked(False)
                     break
-        print(item_added)
         self.chosenLabel.setText(f"{len(self.chosen)}/{self.limit}")
 
+    def toggle_favourites(self):
+        for button in self.starBoxes:
+            if button.isChecked() and button.objectName() not in self.favourites:
+                button.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/fullStar.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
+                self.favourites.append(button.objectName())
+            elif not button.isChecked() and button.objectName() in self.favourites:
+                button.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/star.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
+                self.favourites.remove(button.objectName())
+        self.save_favourites()
+        self.load_favourites()
+
+
+    def save_favourites(self):
+        with open("favourites.json", "w") as f:
+            f.write(json.dumps({"data": self.favourites}))
+
+
     def return_values(self):
+        self.save_favourites()
         self.quit_function(self.chosen)
         self.destroy(True)
 

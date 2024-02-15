@@ -162,7 +162,7 @@ def initalize_project_creation_window():
 
     nameLineEdit = detailsWidget.addRow("Project Name:", "name")
     savePathLabel = detailsWidget.addLabelRow("Save ID:", "-", "saveID")
-    filepathBox = detailsWidget.addWidgetRow("Save At:", QFilePathBox("Select Directory", "folder.png", lambda x: x), "saveDirectory")
+    filepathBox = detailsWidget.addWidgetRow("Save At:", QFilePathBox("Select Directory", "icons/folder.png", lambda x: x), "saveDirectory")
     modIdLineEdit = detailsWidget.addRow("Mod ID:", "modID")
     detailsWidget.addSubmitButtonRow("Create Project")
 
@@ -234,8 +234,8 @@ if __name__ == "__main__":
     showWindow(menuWindow)
     app.setStyleSheet("QWidget { font-family: serif; color: #b8b8b8; font-size: 25px; } \
                         QPushButton { padding: 10px; border: 4px double black; } \
-                        QPushButton:hover { background-color: #333; } \
-                        #mainWindow, #itemSelectorWindow { background-color: #222; } \
+                        #hoverableButton:hover { background-color: #333; } \
+                        #mainWindow, QMainWindow, #scroll { background-color: #222; } \
                         QLineEdit { background-color: transparent; border: none; border-bottom: 2px solid black; padding: 5px; } \
                         QLineEdit:focus { border-bottom: 2px solid #32a89d; } \
                         QLineEdit:hover { background-color: #333; } \
@@ -255,19 +255,19 @@ if __name__ == "__main__":
 
         new_button = QPushButton("+ New Project", menuWindow)
         new_button.clicked.connect(create_new_project)
+        new_button.setObjectName("hoverableButton")
         windowLayout.addWidget(new_button, 2)
         menu_buttons.append(new_button)
 
         open_button = QPushButton("Open Project", menuWindow)
         open_button.clicked.connect(open_project)
+        open_button.setObjectName("hoverableButton")
         windowLayout.addWidget(open_button, 2)
         menu_buttons.append(open_button)
         
-        selection = QItemSelectorWindow(lambda x: item, "Select", 1200, 800, "wiki_order.json", 5, get_chosen_items)
-        selection.setObjectName("itemSelectorWindow")
-        selection.setStyleSheet("background-color: #222;")
+        selection = QItemSelectorWindow([lambda x: True], "Select", 1200, 800, "wiki_order.json", 5, get_chosen_items)
 
-        # icon = QVanillaItemIcon("cod_bucket", (32, 32))
+        # icon = QVanillaItemIcon("leather_helmet", (32, 32))
         # windowLayout.addWidget(icon)
 
         for button in menu_buttons:
