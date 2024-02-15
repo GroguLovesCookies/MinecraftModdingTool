@@ -8,6 +8,7 @@ from id_generator import generate_random_id, validate_id
 from handle_creations import *
 from form import QForm, QFilePathBox
 from item_browser import QVanillaItemIcon, QItemSelectorWindow
+import item_filters
 
 
 CURRENT_PROJECT = ""
@@ -262,11 +263,11 @@ if __name__ == "__main__":
         windowLayout.addWidget(open_button, 2)
         menu_buttons.append(open_button)
         
-        selection = QItemSelectorWindow(lambda x: True, "Select", 1200, 800, "wiki_order.json", 5, get_chosen_items)
+        selection = QItemSelectorWindow(lambda x: item, "Select", 1200, 800, "wiki_order.json", 5, get_chosen_items)
         selection.setObjectName("itemSelectorWindow")
         selection.setStyleSheet("background-color: #222;")
 
-        # icon = QVanillaItemIcon("redstone", (32, 32))
+        # icon = QVanillaItemIcon("cod_bucket", (32, 32))
         # windowLayout.addWidget(icon)
 
         for button in menu_buttons:

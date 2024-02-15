@@ -55,7 +55,8 @@ class QVanillaItemIcon(QWidget):
 class QItemSelectorWindow(QMainWindow):
     itemsToDifferentNames = \
     {"writable_book": "book_and_quill", "map": "empty_map", "filled_map": "map", "cooked_beef": "steak", "dragon_breath": "dragon's_breath", "redstone": "redstone_dust",
-    "bamboo_chest_raft": "bamboo_raft_with_chest", "experience_bottle": "bottle_o'_enchanting"}
+    "bamboo_chest_raft": "bamboo_raft_with_chest", "experience_bottle": "bottle_o'_enchanting", "leather_chestplate": "leather_tunic", "leather_helmet": "leather_cap",
+    "leather_leggings": "leather_pants"}
     notCapitalized = ["of", "with", "and"]
     name_to_order = {"Default Order": "defualt_order", "Wiki Order": "wiki_order.json"}
 
