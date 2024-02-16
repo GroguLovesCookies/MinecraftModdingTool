@@ -6,6 +6,7 @@ from PyQt5.QtGui import QRegExpValidator, QPixmap
 from form import QForm, QFilePathBox, QItemBrowseBox
 import shutil
 from item_browser import QItemSelectorWindow
+from creation_windows.item_group_creator_window import ItemGroupCreatorWindow
 
 
 def create_new_item_group(menuWindow, current_project):
@@ -13,46 +14,8 @@ def create_new_item_group(menuWindow, current_project):
     return initialize_item_group_creator_window(current_project)
 
 
-def get_valid_id(inputLineEdit):
-    text = inputLineEdit.text()
-    return "_".join(text.lower().split())
-
-
-def create_new_item_group_file(form):
-    values = form.getValues()
-    name = values["name"]
-    group_id = values["id"]
-    current_project = values["currentProject"]
-    icon = values["iconItem"]
-    if not os.path.isdir(f"{current_project}/item_groups"):
-        os.mkdir(f"{current_project}/item_groups")
-    with open(f"{current_project}/item_groups/{group_id}.json", "w") as f:
-        f.write(json.dumps({"name": name, "items": [], "icon": icon}))
-
-
-
 def initialize_item_group_creator_window(current_project):
-    itemGroupCreatorWindow = QWidget()
-    itemGroupCreatorWindow.resize(1200, 800)
-    itemGroupCreatorWindow.setWindowTitle("Create New Item Group")
-    
-    mainLayout = QHBoxLayout()
-    itemGroupCreatorWindow.setLayout(mainLayout)
-
-    formWidget = QForm(create_new_item_group_file)
-    mainLayout.addWidget(formWidget)
-
-    nameLineEdit = formWidget.addRow("Name:", "name")
-    idLineEdit = formWidget.addRow("Custom ID:", "id")
-    itemChosenWidget = formWidget.addWidgetRow("Icon Item:", QItemBrowseBox("Select Items", "icons/folder.png", lambda x: x, current_project), "iconItem")
-
-    formWidget.addHiddenInput("currentProject")
-    formWidget.setValues({"currentProject": current_project})
-
-    nameLineEdit.textChanged.connect(lambda: idLineEdit.setText(get_valid_id(nameLineEdit)))
-
-    submitButton = formWidget.addSubmitButtonRow("Create")
-
+    itemGroupCreatorWindow = ItemGroupCreatorWindow("Create New Item Group", 1200, 800, 0, 0, current_project)
     return itemGroupCreatorWindow
 
 

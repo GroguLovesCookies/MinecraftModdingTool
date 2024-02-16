@@ -9,6 +9,7 @@ from handle_creations import *
 from form import QForm, QFilePathBox
 from item_browser import QVanillaItemIcon, QItemSelectorWindow
 import item_filters
+from creation_windows.creation_window import CreationWindow
 
 
 CURRENT_PROJECT = ""
@@ -255,6 +256,7 @@ def initalize_project_editing_window():
     return editProjectWindow
 
 if __name__ == "__main__":
+    CreationWindow.onDestroy = lambda: showWindow(initalize_project_editing_window(), True)
     menu_buttons = []
 
     app = QApplication(sys.argv)
