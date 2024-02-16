@@ -43,8 +43,13 @@ class QForm(QWidget):
     def addSubmitButtonRow(self, label):
         button = QPushButton(label)
         button.clicked.connect(self.submit)
+        button.setObjectName("hoverableButton")
         self.layout.addRow(button)
         return button
+    
+    def addHiddenInput(self, fieldID):
+        lineEdit = QLineEdit()
+        self.fields[fieldID] = lineEdit
 
     def setValues(self, values):
         for key, value in values.items():
@@ -87,6 +92,7 @@ class QFilePathBox(QWidget):
         self.layout.addWidget(self.filepathLineEdit)
 
         self.browseButton = QPushButton()
+        self.browseButton.setObjectName("hoverableButton")
         self.browseButton.setIcon(QIcon(self.folderIcon))
         self.browseButton.clicked.connect(self.onBrowse)
         self.layout.addWidget(self.browseButton)
