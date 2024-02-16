@@ -14,7 +14,10 @@ class CreationWindow(QMainWindow):
         self.current_project = current_project
 
         self.mainLayout = QHBoxLayout()
-        self.setLayout(self.mainLayout)
+
+        self.mainWidget = QWidget()
+        self.mainWidget.setLayout(self.mainLayout)
+        self.setCentralWidget(self.mainWidget)
 
         self.form = QForm(self.handle_creation)
         self.initialize_layout()
