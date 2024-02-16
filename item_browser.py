@@ -159,6 +159,10 @@ class QItemSelectorWindow(QMainWindow):
         self.get_item_ids()
         self.initialize_items()
 
+    @property
+    def favourite_id(self):
+        return "vanilla" if self.vanilla else self.current_project
+
     def handle_scroll(self):
         value = self.scrollArea.verticalScrollBar().value()
         new_start_value = value // 72
@@ -177,14 +181,14 @@ class QItemSelectorWindow(QMainWindow):
 
     def prepare_favourite_order(self):
         temp_file = self.order_file[:]
-        for item in self.favourites:
+        for item in self.favourites[self.favourite_id]:
             temp_file.remove(item)
             temp_file.insert(0, item)
         return temp_file
 
     def load_favourites(self):
         with open("favourites.json", "r") as f:
-            self.favourites = json.loads(f.read())["data"]
+            self.favourites = json.loads(f.read())
 
     def initialize_filters(self):
         filterHeading = QLabel("Filter Only...")
@@ -314,7 +318,7 @@ class QItemSelectorWindow(QMainWindow):
         starButton.setObjectName(item)
         starButton.setCheckable(True)
         starButton.clicked.connect(self.toggle_favourites)
-        if item not in self.favourites:
+        if item not in self.favourites[self.favourite_id]:
             starButton.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/star.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
         else:
             starButton.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/fullStar.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
@@ -352,19 +356,19 @@ class QItemSelectorWindow(QMainWindow):
 
     def toggle_favourites(self):
         for button in self.starBoxes:
-            if button.isChecked() and button.objectName() not in self.favourites:
+            if button.isChecked() and button.objectName() not in self.favourites[self.favourite_id]:
                 button.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/fullStar.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
-                self.favourites.append(button.objectName())
-            elif not button.isChecked() and button.objectName() in self.favourites:
+                self.favourites[self.favourite_id].append(button.objectName())
+            elif not button.isChecked() and button.objectName() in self.favourites[self.favourite_id]:
                 button.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/star.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
-                self.favourites.remove(button.objectName())
+                self.favourites[self.favourite_id].remove(button.objectName())
         self.save_favourites()
         self.load_favourites()
 
 
     def save_favourites(self):
         with open("favourites.json", "w") as f:
-            f.write(json.dumps({"data": self.favourites}))
+            f.write(json.dumps(self.favourites))
 
 
     def return_values(self):
