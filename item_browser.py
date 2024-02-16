@@ -202,9 +202,11 @@ class QItemSelectorWindow(QMainWindow):
         for item in self.prepare_favourite_order():
             if True in [filter_function(item) for filter_function in self.filters] and self.search_filter(item):
                 self.items.append(item)
-        self.scrollContent.setFixedHeight(len(self.items) * 72)
+        self.scrollContent.setFixedHeight(max(len(self.items) * 72, (self.num_to_show - 2)*72 - 36))
 
     def update_display(self):
+        self.start_index = 0
+        self.scrollArea.verticalScrollBar().setValue(0)
         self.search_filter = lambda x: x.startswith(self.searchBar.text())
         self.get_item_ids()
         self.clear_layout()
