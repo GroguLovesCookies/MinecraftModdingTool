@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QLabel, QFileDialog, QRadioButton, QGridLayout, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QLabel, QFileDialog, QRadioButton, QGridLayout, QSizePolicy, QScrollArea
 from PyQt5.QtGui import QIcon, QRegExpValidator
 from PyQt5.QtCore import Qt, QRegExp
 import sys
@@ -193,6 +193,27 @@ def initalize_project_editing_window():
     global menuWindow
     editProjectWindow = QWidget()
 
+    buttonValues = [
+        ("New Creative\nMode Tab", lambda: showWindow(create_new_item_group(menuWindow, CURRENT_PROJECT)), (0, 0, 1, 1)),
+        ("New Item", lambda: showWindow(create_new_item(menuWindow, CURRENT_PROJECT)), (0, 1, 1, 1)),
+        ("New Block", lambda: True, (0, 2, 1, 1)),
+        ("New Tool\nSet", lambda: True, (1, 0, 1, 1)),
+        ("New Armor\nSet", lambda: True, (1, 1, 1, 1)),
+        ("New Block\nSet", lambda: True, (1, 2, 1, 1)),
+        ("New Tool\nSet", lambda: True, (2, 0, 1, 1)),
+        ("New Armor\nSet", lambda: True, (2, 1, 1, 1)),
+        ("New Block\nSet", lambda: True, (2, 2, 1, 1)),
+        ("New Tool\nSet", lambda: True, (3, 0, 1, 1)),
+        ("New Armor\nSet", lambda: True, (3, 1, 1, 1)),
+        ("New Block\nSet", lambda: True, (3, 2, 1, 1)),
+        ("New Tool\nSet", lambda: True, (4, 0, 1, 1)),
+        ("New Armor\nSet", lambda: True, (4, 1, 1, 1)),
+        ("New Block\nSet", lambda: True, (4, 2, 1, 1)),
+        ("New Tool\nSet", lambda: True, (5, 0, 1, 1)),
+        ("New Armor\nSet", lambda: True, (5, 1, 1, 1)),
+        ("New Block\nSet", lambda: True, (5, 2, 1, 1))
+    ]
+
     projectProperties = {}
     if os.path.isdir(CURRENT_PROJECT):
         with open(f"{CURRENT_PROJECT}/properties.json", "r") as f:
@@ -201,22 +222,34 @@ def initalize_project_editing_window():
 
     editProjectWindow.setWindowTitle(projectProperties["title"])
     
-    createLayout = QGridLayout()
+    createLayout = QHBoxLayout()
     editProjectWindow.setLayout(createLayout)
 
-    addItemGroupButton = QPushButton("New Creative Mode Tab")
-    addItemGroupButton.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-    addItemGroupButton.clicked.connect(lambda: showWindow(create_new_item_group(menuWindow, CURRENT_PROJECT)))
-    createLayout.addWidget(addItemGroupButton, 0, 0, 1, 1)
+    scrollArea = QScrollArea()
+    createLayout.addWidget(scrollArea, 42)
+    scrollArea.setWidgetResizable(True)
 
-    addItemButton = QPushButton("New Item")
-    addItemButton.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-    addItemButton.clicked.connect(lambda: showWindow(create_new_item(menuWindow, CURRENT_PROJECT), True))
-    createLayout.addWidget(addItemButton, 0, 1, 1, 1)
+    scrollContent = QWidget()
+    scrollContent.setObjectName("scroll")
+    scrollLayout = QGridLayout()
+    scrollContent.setLayout(scrollLayout)
+    scrollArea.setWidget(scrollContent)
 
-    addBlockButton = QPushButton("New Block")
-    addBlockButton.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-    createLayout.addWidget(addBlockButton, 0, 2, 1, 1)
+    buttonWidth = 250
+
+    for button_name, button_callback, button_coords in buttonValues:
+        button = QPushButton(button_name)
+        button.clicked.connect(button_callback)
+        scrollLayout.addWidget(button, *button_coords, Qt.AlignmentFlag.AlignTop)
+        button.setObjectName("hoverableButton")
+        button.setFixedSize(buttonWidth, buttonWidth)
+
+    
+    scrollArea.setObjectName("scrollArea")
+
+    editArea = QWidget()
+    createLayout.addWidget(editArea, 58)
+    
 
     
     return editProjectWindow
