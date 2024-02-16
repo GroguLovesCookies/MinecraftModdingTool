@@ -352,6 +352,8 @@ class QItemSelectorWindow(QMainWindow):
                 if checkbox.checkState() == 2 and checkbox.objectName() != item_added:
                     checkbox.setChecked(False)
                     break
+            if len(self.chosen) > self.limit:
+                self.chosen.remove(self.chosen[0])
         self.chosenLabel.setText(f"{len(self.chosen)}/{self.limit}")
 
     def toggle_favourites(self):

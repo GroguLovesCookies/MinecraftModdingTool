@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFormLayout, QFileDialog
 from PyQt5.QtGui import QIcon, QRegExpValidator, QValidator
 import os
+from item_browser import QItemSelectorWindow
 
 
 class QForm(QWidget):
@@ -43,6 +44,7 @@ class QForm(QWidget):
         button = QPushButton(label)
         button.clicked.connect(self.submit)
         self.layout.addRow(button)
+        return button
 
     def setValues(self, values):
         for key, value in values.items():
@@ -112,3 +114,19 @@ class QFilePathBox(QWidget):
     def setIcon(self, path):
         if os.path.isfile(path):
             self.browseButton.setIcon(QIcon(path))
+
+
+class QItemBrowseBox(QFilePathBox):
+    def __init__(self, dialogTitle, dialogIcon, callback, current_project, *args, **kwargs):
+        super().__init__(dialogTitle, dialogIcon, callback)
+        self.current_project = current_project
+        self.selected = ""
+
+    def onBrowse(self):
+        window = QItemSelectorWindow([lambda x: True], self.fileDialogTitle, 1200, 800, "wiki_order.json", 1, self.getSelectedItem, self.current_project)
+
+    def getSelectedItem(self, x):
+        self.selected = x[0]
+        if ":" not in self.selected:
+            self.selected = "minecraft:" + self.selected
+        self.setText(self.selected)

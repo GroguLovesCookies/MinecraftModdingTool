@@ -3,8 +3,9 @@ import json
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QFormLayout, QPushButton, QLabel, QLineEdit, QWidget, QSizePolicy, QCheckBox
 from PyQt5.QtCore import QRegExp, Qt
 from PyQt5.QtGui import QRegExpValidator, QPixmap
-from form import QForm, QFilePathBox
+from form import QForm, QFilePathBox, QItemBrowseBox
 import shutil
+from item_browser import QItemSelectorWindow
 
 
 def create_new_item_group(menuWindow, current_project):
@@ -36,13 +37,12 @@ def initialize_item_group_creator_window(current_project):
     mainLayout = QHBoxLayout()
     itemGroupCreatorWindow.setLayout(mainLayout)
 
-    formWidget = QForm()
-    formLayout = QFormLayout()
-    formWidget.setLayout(formLayout)
+    formWidget = QForm(lambda x: x)
     mainLayout.addWidget(formWidget)
 
     nameLineEdit = formWidget.addRow("Name:", "name")
-    idLineEdit = formLayout.addRow("Custom ID:", "id")
+    idLineEdit = formWidget.addRow("Custom ID:", "id")
+    itemChosenWidget = formWidget.addWidgetRow("Ioon Item:", QItemBrowseBox("Select Items", "icons/folder.png", lambda x: x, current_project), "iconItem")
 
     nameLineEdit.textChanged.connect(lambda: idLineEdit.setText(get_valid_id(nameLineEdit)))
 
