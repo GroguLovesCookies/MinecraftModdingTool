@@ -194,7 +194,9 @@ class QItemSelectorWindow(QMainWindow):
             itemChosen = QCheckBox()
             itemChosen.setObjectName(item)
             self.checkboxes.append(itemChosen)
-            itemChosen.toggled.connect(self.toggle_item)
+            if item in self.chosen:
+                itemChosen.setChecked(True)
+            itemChosen.clicked.connect(self.toggle_item)
             starButton = QPushButton()
             starButton.setObjectName(item)
             starButton.setCheckable(True)
