@@ -73,6 +73,9 @@ class QItemSelectorWindow(QMainWindow):
         self.resize(w, h)
         self.quit_function = quit_function
 
+        self.num_to_show = h//72 + 1
+        self.start_index = 0
+
         self.checkboxes = []
         self.filterCheckboxes = []
         self.starBoxes = []
@@ -85,6 +88,10 @@ class QItemSelectorWindow(QMainWindow):
         self.mainWidget.setLayout(self.mainLayout)
 
         self.layout =  QFormLayout()
+
+        self.leftWidget = QWidget()
+        self.leftLayout = QFormLayout()
+        self.leftWidget.setLayout(self.leftLayout)
 
         self.searchTools = QWidget()
         self.searchLayout = QHBoxLayout()
@@ -106,7 +113,7 @@ class QItemSelectorWindow(QMainWindow):
         self.finishedButton.setObjectName("hoverableButton")
         self.searchLayout.addWidget(self.finishedButton)
 
-        self.layout.addRow("Search:", self.searchTools)
+        self.leftLayout.addRow("Search:", self.searchTools)
         self.searchBar.textChanged.connect(self.update_display)
 
         self.items = []
@@ -117,8 +124,10 @@ class QItemSelectorWindow(QMainWindow):
         self.scrollContent.setLayout(self.layout)
         self.scrollArea.setWidgetResizable(True)
         self.order_file = QItemSelectorWindow.getOrderFile(order_file)
+        self.scrollArea.verticalScrollBar().valueChanged.connect(self.handle_scroll)
 
-        self.mainLayout.addWidget(self.scrollArea, 75)
+        self.leftLayout.addRow(self.scrollArea)
+        self.mainLayout.addWidget(self.leftWidget, 76)
 
         self.scrollArea.setWidget(self.scrollContent)
 
@@ -133,6 +142,22 @@ class QItemSelectorWindow(QMainWindow):
 
         self.get_item_ids()
         self.initialize_items()
+
+    def handle_scroll(self):
+        value = self.scrollArea.verticalScrollBar().value()
+        new_start_value = value // 72
+        if new_start_value > self.start_index:
+            while self.start_index < new_start_value:
+                self.add_new_item_below()
+                self.start_index += 1
+
+    def add_new_item_below(self):
+        try:
+            item = self.items[self.start_index + self.num_to_show - 1]
+        except IndexError:
+            return
+        self.add_item(item)
+
 
     def prepare_favourite_order(self):
         temp_file = self.order_file[:]
@@ -177,6 +202,7 @@ class QItemSelectorWindow(QMainWindow):
         for item in self.prepare_favourite_order():
             if True in [filter_function(item) for filter_function in self.filters] and self.search_filter(item):
                 self.items.append(item)
+        self.scrollContent.setFixedHeight(len(self.items) * 72)
 
     def update_display(self):
         self.search_filter = lambda x: x.startswith(self.searchBar.text())
@@ -187,37 +213,43 @@ class QItemSelectorWindow(QMainWindow):
     def initialize_items(self):
         self.checkboxes.clear()
         self.starBoxes.clear()
-        for item in self.items:
-            itemRow = QHBoxLayout()
-            itemIcon = QVanillaItemIcon(item, (32, 32))
-            itemLabel = QLabel(QItemSelectorWindow.getItemNameFromID(item))
-            itemChosen = QCheckBox()
-            itemChosen.setObjectName(item)
-            self.checkboxes.append(itemChosen)
-            if item in self.chosen:
-                itemChosen.setChecked(True)
-            itemChosen.clicked.connect(self.toggle_item)
-            starButton = QPushButton()
-            starButton.setObjectName(item)
-            starButton.setCheckable(True)
-            starButton.clicked.connect(self.toggle_favourites)
-            if item not in self.favourites:
-                starButton.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/star.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
-            else:
-                starButton.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/fullStar.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
-                starButton.setChecked(True)
-            self.starBoxes.append(starButton)
+        for item in self.items[self.start_index:self.start_index+self.num_to_show]:
+            self.add_item(item)
+    
+    def add_item(self, item):
+        itemRowWidget = QWidget()
+        itemRow = QHBoxLayout()
+        itemRowWidget.setLayout(itemRow)
 
-            itemRow.addWidget(itemIcon, 5)
-            itemRow.addWidget(itemLabel, 85)
-            itemRow.addWidget(itemChosen, 5)
-            itemRow.addWidget(starButton, 5)
+        itemIcon = QVanillaItemIcon(item, (32, 32))
+        itemLabel = QLabel(QItemSelectorWindow.getItemNameFromID(item))
+        itemChosen = QCheckBox()
+        itemChosen.setObjectName(item)
+        self.checkboxes.append(itemChosen)
+        if item in self.chosen:
+            itemChosen.setChecked(True)
+        itemChosen.clicked.connect(self.toggle_item)
+        starButton = QPushButton()
+        starButton.setObjectName(item)
+        starButton.setCheckable(True)
+        starButton.clicked.connect(self.toggle_favourites)
+        if item not in self.favourites:
+            starButton.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/star.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
+        else:
+            starButton.setStyleSheet(" border: none; padding: 0px; background-image: url('icons/fullStar.png'); background-repeat: no-repeat; width: 30px; height: 30px; ")
+            starButton.setChecked(True)
+        self.starBoxes.append(starButton)
 
-            self.layout.addRow(itemRow)
+        itemRow.addWidget(itemIcon, 5)
+        itemRow.addWidget(itemLabel, 85)
+        itemRow.addWidget(itemChosen, 5)
+        itemRow.addWidget(starButton, 5)
+
+        self.layout.addRow(itemRowWidget)
 
     def clear_layout(self):
-        while self.layout.rowCount() > 1:
-            self.layout.removeRow(1)
+        while self.layout.rowCount() > 0:
+            self.layout.removeRow(0)
 
     def toggle_item(self):
         item_added = ""
