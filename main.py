@@ -235,13 +235,21 @@ if __name__ == "__main__":
     app.setStyleSheet("QWidget { font-family: serif; color: #b8b8b8; font-size: 25px; } \
                         QPushButton { padding: 10px; border: 4px double black; } \
                         #hoverableButton:hover { background-color: #333; } \
-                        #mainWindow, QMainWindow, #scroll { background-color: #222; } \
+                        #mainWindow, QMainWindow { background-color: #222; } \
+                        #scroll { background-color: #202020; } \
                         QLineEdit { background-color: transparent; border: none; border-bottom: 2px solid black; padding: 5px; } \
                         QLineEdit:focus { border-bottom: 2px solid #32a89d; } \
                         QLineEdit:hover { background-color: #333; } \
                         #itemGroupChoiceHeading { font-size: 40px; margin-bottom: 5px; }  \
                         QCheckBox::indicator { width: 20px; height: 20px; background-color: transparent; border: 2px solid black; margin-top: 4px; } \
-                        QCheckBox::indicator:checked { background-color: #32a89d; }")
+                        QCheckBox::indicator:checked { background-color: #32a89d; } \
+                        #scrollArea { border: none; } \
+                        QScrollBar { width: 8px; background: transparent; } \
+                        QScrollBar::handle { background-color: #32a89d; border-radius: 4px; } \
+                        QScrollBar::add-line { border: none; background: none; } \
+                        QScrollBar::sub-line { border: none; background: none; } \
+                        QRadioButton::indicator { background: none; width: 20px; height: 20px; border: 2px solid black; border-radius: 12px; } \
+                        QRadioButton::indicator:checked { background-color: #32a89d; } ")
     
     if CURRENT_PROJECT == "":
         windowParent = QWidget(menuWindow)
@@ -265,7 +273,7 @@ if __name__ == "__main__":
         windowLayout.addWidget(open_button, 2)
         menu_buttons.append(open_button)
         
-        selection = QItemSelectorWindow([lambda x: True], "Select", 1200, 800, "wiki_order.json", 5, get_chosen_items)
+        selection = QItemSelectorWindow([lambda x: True], "Select", 1200, 800, "wiki_order.json", 5, get_chosen_items, "first_mod")
 
         # icon = QVanillaItemIcon("leather_helmet", (32, 32))
         # windowLayout.addWidget(icon)

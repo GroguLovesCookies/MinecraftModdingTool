@@ -1,7 +1,8 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QFormLayout, QScrollArea, QMainWindow, QLineEdit, QPushButton, QHBoxLayout, QComboBox, QCheckBox
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QFormLayout, QScrollArea, QMainWindow, QLineEdit, QPushButton, QHBoxLayout, QComboBox, QCheckBox, QRadioButton, QButtonGroup
 from PyQt5.QtGui import QImage, QPixmap, QColor, QIcon
 import json
 import item_filters
+import os
 
 
 def get_sprite_key():
@@ -52,6 +53,10 @@ class QVanillaItemIcon(QWidget):
         self.pixmap = self.pixmap.scaled(*self.size)
         self.label.setPixmap(self.pixmap)
 
+    def set_pixmap(self, pixmap):
+        self.pixmap = pixmap.scaled(*self.size)
+        self.label.setPixmap(self.pixmap)
+
 
 class QItemSelectorWindow(QMainWindow):
     itemsToDifferentNames = \
@@ -63,7 +68,7 @@ class QItemSelectorWindow(QMainWindow):
     "Pottery Sherds": item_filters.pottery_sherd_filter, "Spawn Eggs": item_filters.spawn_egg_filter, "Tools": item_filters.tools_filter,  "Armor": item_filters.armor_filter, 
     "Music Discs": item_filters.music_disc_filter, "Boats": item_filters.boats_filter, "Minecarts": item_filters.minecarts_filter, "Buckets": item_filters.buckets_filter}
 
-    def __init__(self, filters, title, w, h, order_file="wiki_order.json", limit=-1, quit_function=lambda x: x):
+    def __init__(self, filters, title, w, h, order_file="wiki_order.json", limit=-1, quit_function=lambda x: x, current_project=""):
         super().__init__()
 
         self.filters = filters
@@ -72,6 +77,8 @@ class QItemSelectorWindow(QMainWindow):
         self.show()
         self.resize(w, h)
         self.quit_function = quit_function
+        self.current_project = current_project
+        self.vanilla = True
 
         self.num_to_show = h//72 + 1
         self.start_index = 0
@@ -80,6 +87,7 @@ class QItemSelectorWindow(QMainWindow):
         self.filterCheckboxes = []
         self.starBoxes = []
         self.favourites = []
+        self.setButtons = []
 
         self.mainWidget = QWidget()
         self.setCentralWidget(self.mainWidget)
@@ -130,15 +138,23 @@ class QItemSelectorWindow(QMainWindow):
         self.mainLayout.addWidget(self.leftWidget, 76)
 
         self.scrollArea.setWidget(self.scrollContent)
+        self.scrollArea.setObjectName("scrollArea")
 
         self.settingsArea = QWidget()
         self.settingsLayout = QFormLayout()
         self.settingsArea.setLayout(self.settingsLayout)
-        self.mainLayout.addWidget(self.settingsArea, 25)
+        self.settingsArea.setObjectName("scroll")
+
+        self.settingsScrollArea = QScrollArea()
+        self.settingsScrollArea.setObjectName("scrollArea")
+        self.settingsScrollArea.setWidgetResizable(True)
+        self.settingsScrollArea.setWidget(self.settingsArea)
+        self.mainLayout.addWidget(self.settingsScrollArea, 25)
 
         self.load_favourites()
 
         self.initialize_filters()
+        self.initalize_sets()
 
         self.get_item_ids()
         self.initialize_items()
@@ -188,6 +204,46 @@ class QItemSelectorWindow(QMainWindow):
 
             self.settingsLayout.addWidget(checkWidget)
 
+    def initalize_sets(self):
+        setHeading = QLabel("Item Sets")
+        setHeading.setObjectName("itemGroupChoiceHeading")
+        self.settingsLayout.addWidget(setHeading)
+
+        vanillaItemsWidget = QWidget()
+        vanillaItemsLayout = QHBoxLayout()
+        vanillaItemsWidget.setLayout(vanillaItemsLayout)
+        vanillaItemsLayout.addWidget(QLabel("Vanilla Items"), 90)
+        vanillaRadioButton = QRadioButton()
+        self.setButtons.append(vanillaRadioButton)
+        vanillaItemsLayout.addWidget(vanillaRadioButton, 10)
+        vanillaRadioButton.clicked.connect(lambda: self.toggle_set("vanilla_items"))
+
+        if self.current_project != "":
+            modItemsWidget = QWidget()
+            modItemsLayout = QHBoxLayout()
+            modItemsWidget.setLayout(modItemsLayout)
+            modItemsLayout.addWidget(QLabel("Mod Items"), 90)
+            modItemButton = QRadioButton()
+            self.setButtons.append(modItemButton)
+            modItemButton.clicked.connect(lambda: self.toggle_set("mod_items"))
+            modItemsLayout.addWidget(modItemButton, 10)
+
+        self.settingsLayout.addWidget(vanillaItemsWidget)
+        self.settingsLayout.addWidget(modItemsWidget)
+
+    
+    def toggle_set(self, value):
+        if value == "vanilla_items":
+            self.vanilla = True
+            for i in [1]:
+                self.setButtons[i].setChecked(False)
+        elif value == "mod_items":
+            self.vanilla = False
+            for i in [0]:
+                self.setButtons[i].setChecked(False)
+        self.update_display()
+
+
     def toggle_filter(self):
         self.filters.clear()
         for checkbox in self.filterCheckboxes:
@@ -199,9 +255,14 @@ class QItemSelectorWindow(QMainWindow):
 
     def get_item_ids(self):
         self.items.clear()
-        for item in self.prepare_favourite_order():
-            if True in [filter_function(item) for filter_function in self.filters] and self.search_filter(item):
-                self.items.append(item)
+        if self.vanilla:
+            for item in self.prepare_favourite_order():
+                if True in [filter_function(item) for filter_function in self.filters] and self.search_filter(item):
+                    self.items.append(item)
+        else:
+            for item_file in os.listdir(f"{self.current_project}/items"):
+                with open(f"{self.current_project}/items/{item_file}") as f:
+                    self.items.append(json.loads(f.read()))
         self.scrollContent.setFixedHeight(max(len(self.items) * 72, (self.num_to_show - 2)*72 - 36))
 
     def update_display(self):
@@ -216,15 +277,33 @@ class QItemSelectorWindow(QMainWindow):
         self.checkboxes.clear()
         self.starBoxes.clear()
         for item in self.items[self.start_index:self.start_index+self.num_to_show]:
-            self.add_item(item)
-    
-    def add_item(self, item):
+            if self.vanilla:
+                self.add_item(item)
+            else:
+                self.add_mod_item(item)
+
+    def add_mod_item(self, item):
+        name = item["name"]
+        texture_file = item["texture"]
+        item_id = item["id"]
+        pixmap = QPixmap(texture_file)
+        vanillaIcon = QVanillaItemIcon("redstone", (32, 32))
+        vanillaIcon.set_pixmap(pixmap)
+        self.add_item(item_id, vanillaIcon, name)
+
+    def add_item(self, item, icon=None, itemName=""):
         itemRowWidget = QWidget()
         itemRow = QHBoxLayout()
         itemRowWidget.setLayout(itemRow)
 
-        itemIcon = QVanillaItemIcon(item, (32, 32))
-        itemLabel = QLabel(QItemSelectorWindow.getItemNameFromID(item))
+        if icon is None:
+            itemIcon = QVanillaItemIcon(item, (32, 32))
+        else:
+            itemIcon = icon
+        if itemName == "":
+            itemLabel = QLabel(QItemSelectorWindow.getItemNameFromID(item))
+        else:
+            itemLabel = QLabel(itemName)
         itemChosen = QCheckBox()
         itemChosen.setObjectName(item)
         self.checkboxes.append(itemChosen)
