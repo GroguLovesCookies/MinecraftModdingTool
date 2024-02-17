@@ -14,7 +14,7 @@ class ItemGroupCreatorWindow(CreationWindow):
         if not os.path.isdir(f"{current_project}/item_groups"):
             os.mkdir(f"{current_project}/item_groups")
         with open(f"{current_project}/item_groups/{group_id}.json", "w") as f:
-            f.write(json.dumps({"name": name, "items": [], "icon": icon}))
+            f.write(json.dumps({"name": name, "items": [], "icon": icon, "id": values["id"]}))
 
         super().handle_creation(form)
 

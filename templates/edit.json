@@ -1,0 +1,5 @@
+{
+    "rebuild": ["gradle.properties"], 
+    "redatagen": ["ModModelProvider.java"], 
+    "other": ["en_us.json", "fabric.mod.json", "%modID%.mixins.json", "ModItems.java", "ModItemGroups.java"]
+}

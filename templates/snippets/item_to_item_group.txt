@@ -1,0 +1,4 @@
+!IMPORTS!
+
+!CONTENT!
+entries.add(%itemSpace%.%itemVar%);

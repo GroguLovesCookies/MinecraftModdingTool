@@ -1,0 +1,5 @@
+!IMPORTS!
+
+
+!CONTENT!
+public static final Block %blockVar% = registerBlock("%blockID%", new Block(FabricBlockSettings.copyOf(Blocks.IRON_BLOCK).sounds(BlockSoundGroup.AMETHYST_BLOCK)));

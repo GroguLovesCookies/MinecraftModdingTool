@@ -1,0 +1,18 @@
+!IMPORTS!
+import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+
+
+!CONTENT!
+public static final ItemGroup %GROUP_NAME% = Registry.register(Registries.ITEM_GROUP,
+new Identifier("%modID%", "%groupID%"),
+FabricItemGroup.builder().displayName(Text.translatable("itemgroup.%groupID%"))
+        .icon(() -> new ItemStack(%iconItem%)).entries((displayContext, entries) -> {
+            %Items%
+        }).build());
