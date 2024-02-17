@@ -1,1 +1,1 @@
-{"name": "Mod Items", "items": ["firstmod:ruby", "firstmod:ruby_pickaxe", "firstmod:ruby_axe", "firstmod:ruby_sword", "firstmod:ruby_hoe", "firstmod:raw_ruby", "firstmod:ruby_shovel"], "icon": "minecraft:silence_armor_trim_smithing_template", "id": "mod_items"}
+{"name": "Mod Items", "items": ["firstmod:ruby", "firstmod:ruby_pickaxe", "firstmod:ruby_axe", "firstmod:ruby_sword", "firstmod:ruby_hoe", "firstmod:raw_ruby", "firstmod:ruby_shovel", "minecraft:diamond"], "icon": "firstmod:raw_ruby", "id": "mod_items"}

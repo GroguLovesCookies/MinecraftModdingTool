@@ -342,8 +342,9 @@ class QItemSelectorWindow(QMainWindow):
         for checkbox in self.checkboxes:
             if checkbox.checkState() == 2:
                 if checkbox.objectName() not in self.chosen:
-                    self.chosen.append(checkbox.objectName())
-                    item_added = checkbox.objectName()
+                    stem = "minecraft:" if self.vanilla else ""
+                    self.chosen.append(stem + checkbox.objectName())
+                    item_added = stem + checkbox.objectName()
             elif checkbox.objectName() in self.chosen:
                 self.chosen.remove(checkbox.objectName())
                 removed = True
