@@ -5,7 +5,7 @@ from form import QForm, QFilePathBox
 class CreationWindow(QMainWindow):
     onDestroy = None
 
-    def __init__(self, title, w, h, x, y, current_project):
+    def __init__(self, title, w, h, x, y, current_project, path=""):
         super().__init__()
 
         self.setWindowTitle(title)
@@ -24,7 +24,12 @@ class CreationWindow(QMainWindow):
         self.initialize_form()
         self.initialize_extras()
 
+        self.path = path
+        if self.path != "":
+            self.form.setValues(self.get_form_values(path))
 
+    def get_form_values(self, path):
+        ...
 
     def initialize_form(self):
         self.form.addHiddenInput("currentProject")

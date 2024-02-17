@@ -123,13 +123,14 @@ class QFilePathBox(QWidget):
 
 
 class QItemBrowseBox(QFilePathBox):
-    def __init__(self, dialogTitle, dialogIcon, callback, current_project, *args, **kwargs):
+    def __init__(self, dialogTitle, dialogIcon, callback, current_project, limit=1, *args, **kwargs):
         super().__init__(dialogTitle, dialogIcon, callback)
         self.current_project = current_project
         self.selected = ""
+        self.limit = limit
 
     def onBrowse(self):
-        window = QItemSelectorWindow([lambda x: True], self.fileDialogTitle, 1200, 800, "wiki_order.json", 1, self.getSelectedItem, self.current_project)
+        window = QItemSelectorWindow([lambda x: True], self.fileDialogTitle, 1200, 800, "wiki_order.json", self.limit, self.getSelectedItem, self.current_project)
 
     def getSelectedItem(self, x):
         self.selected = x[0]

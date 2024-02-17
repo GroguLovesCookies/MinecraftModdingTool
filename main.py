@@ -1,4 +1,6 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QLabel, QFileDialog, QRadioButton, QGridLayout, QSizePolicy, QScrollArea
+from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, 
+QLineEdit, QLabel, QFileDialog, QRadioButton, QGridLayout, QSizePolicy, QScrollArea,
+QTabWidget)
 from PyQt5.QtGui import QIcon, QRegExpValidator
 from PyQt5.QtCore import Qt, QRegExp
 import sys
@@ -10,6 +12,8 @@ from form import QForm, QFilePathBox
 from item_browser import QVanillaItemIcon, QItemSelectorWindow
 import item_filters
 from creation_windows.creation_window import CreationWindow
+from creation_windows.item_group_creator_window import ItemGroupCreatorWindow
+from list_widget import QListWidget
 
 
 CURRENT_PROJECT = ""
@@ -249,11 +253,35 @@ def initalize_project_editing_window():
     scrollArea.setObjectName("scrollArea")
 
     editArea = QWidget()
+    editLayout = QVBoxLayout()
+    editArea.setLayout(editLayout)
     createLayout.addWidget(editArea, 58)
+
+    editLabel = QLabel("Edit")
+    editLabel.setObjectName("itemGroupChoiceHeading")
+    editLayout.addWidget(editLabel)
+
+    editTabs = QTabWidget()
+    editLayout.addWidget(editTabs)
+
+    values = {}
+    for group in os.listdir(os.path.join(CURRENT_PROJECT, "item_groups")):
+        with open(os.path.join(CURRENT_PROJECT, "item_groups", group), "r") as f:
+            values[os.path.join(CURRENT_PROJECT, "item_groups", group)] = json.loads(f.read())["name"]
+    editItemGroupsWidget = QListWidget(values, handle_item_group_click)
+
+    editItemsWidget = QWidget()
+
+    editTabs.addTab(editItemGroupsWidget, "Item Groups")
+    editTabs.addTab(editItemsWidget, "Items")
     
 
     
     return editProjectWindow
+
+def handle_item_group_click(x):
+    global menuWindow
+    showWindow(create_new_item_group(menuWindow, CURRENT_PROJECT, x))
 
 if __name__ == "__main__":
     CreationWindow.onDestroy = lambda: showWindow(initalize_project_editing_window(), True)
@@ -269,7 +297,7 @@ if __name__ == "__main__":
     showWindow(menuWindow)
     app.setStyleSheet("QWidget { font-family: serif; color: #b8b8b8; font-size: 25px; } \
                         QPushButton { padding: 10px; border: 4px double black; } \
-                        #hoverableButton:hover { background-color: #333; } \
+                        #hoverableButton:hover, #falseButton:hover { background-color: #333; } \
                         #mainWindow, QMainWindow { background-color: #222; } \
                         #scroll { background-color: #202020; } \
                         QLineEdit { background-color: transparent; border: none; border-bottom: 2px solid black; padding: 5px; } \
@@ -284,7 +312,11 @@ if __name__ == "__main__":
                         QScrollBar::add-line { border: none; background: none; } \
                         QScrollBar::sub-line { border: none; background: none; } \
                         QRadioButton::indicator { background: none; width: 20px; height: 20px; border: 2px solid black; border-radius: 12px; } \
-                        QRadioButton::indicator:checked { background-color: #32a89d; } ")
+                        QRadioButton::indicator:checked { background-color: #32a89d; } \
+                        QTabWidget { background-color: #202020; border: none; } \
+                        QTabBar::tab:!selected { background-color: #202020; } \
+                        QTabBar::tab:selected { background-color: #333; } \
+                        #falseButton { border: none; }")
     
     if CURRENT_PROJECT == "":
         windowParent = QWidget(menuWindow)
@@ -307,8 +339,6 @@ if __name__ == "__main__":
         open_button.setObjectName("hoverableButton")
         windowLayout.addWidget(open_button, 2)
         menu_buttons.append(open_button)
-        
-        selection = QItemSelectorWindow([lambda x: True], "Select", 1200, 800, "wiki_order.json", 5, get_chosen_items, "first_mod")
 
         # icon = QVanillaItemIcon("leather_helmet", (32, 32))
         # windowLayout.addWidget(icon)

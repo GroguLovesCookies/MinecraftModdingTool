@@ -10,13 +10,13 @@ from creation_windows.item_group_creator_window import ItemGroupCreatorWindow
 from creation_windows.item_creator_window import ItemCreatorWindow
 
 
-def create_new_item_group(menuWindow, current_project):
+def create_new_item_group(menuWindow, current_project, path=""):
     menuWindow.hide()
-    return initialize_item_group_creator_window(current_project)
+    return initialize_item_group_creator_window(current_project, path)
 
 
-def initialize_item_group_creator_window(current_project):
-    itemGroupCreatorWindow = ItemGroupCreatorWindow("Create New Item Group", 1200, 800, 0, 0, current_project)
+def initialize_item_group_creator_window(current_project, path=""):
+    itemGroupCreatorWindow = ItemGroupCreatorWindow("Create New Item Group", 1200, 800, 0, 0, current_project, path)
     return itemGroupCreatorWindow
 
 

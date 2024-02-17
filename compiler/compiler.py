@@ -28,6 +28,9 @@ class Compiler:
         self.initialize_translations()
 
     def copy_files(self):
+        if os.path.isdir(os.path.join(self.current_project, "compiled")):
+            shutil.rmtree(os.path.join(self.current_project, "compiled"))
+
         shutil.copytree("templates/files", f"{self.current_project}/compiled")
         cur_domain = ""
         for folder in self.domain.split(".")[:-1]:
