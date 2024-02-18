@@ -347,6 +347,7 @@ if __name__ == "__main__":
         menu_buttons.append(open_button)
 
         # icon = QVanillaItemIcon("leather_helmet", (32, 32))
+        # icon.set_block("redstone_comparator")
         # windowLayout.addWidget(icon)
 
         for button in menu_buttons:

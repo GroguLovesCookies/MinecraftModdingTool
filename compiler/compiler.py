@@ -4,7 +4,15 @@ import shutil
 import subprocess
 
 
+def get_vanilla_items():
+    with open("resources/item_orders/wiki_order.json", "r") as f:
+        return json.loads(f.read())["order"]
+
+
 class Compiler:
+    vanilla_items = get_vanilla_items()
+
+
     def __init__(self, current_project):
         self.current_project = current_project
 
@@ -257,7 +265,10 @@ class Compiler:
         for item in items:
             content_copy = content[:]
             if item.startswith("minecraft:"):
-                item_space = "Items"
+                if item.split(":")[1] in Compiler.vanilla_items:
+                    item_space = "Items"
+                else:
+                    item_space = "Blocks"
             else:
                 item_space = "ModItems"
 

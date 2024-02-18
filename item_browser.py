@@ -3,23 +3,41 @@ from PyQt5.QtGui import QImage, QPixmap, QColor, QIcon
 import json
 import item_filters
 import os
+import numpy
 
 
 def get_sprite_key():
     with open("resources/spritekey.json") as f:
         return json.loads(f.read())
 
+def get_block_sprite_key():
+    with open("resources/spritekey_blocks.json") as f:
+        return json.loads(f.read())
 
 def get_spritesheet():
     with open("resources/spritesheet.json") as f:
         return json.loads(f.read())["img"]
 
+def get_block_spritesheet():
+    with open("resources/spritesheet_blocks.json") as f:
+        return json.loads(f.read())["img"]
+
+def get_loose_blocks():
+    data = {}
+    for path in os.listdir("resources/loose"):
+        if path.endswith(".json"):
+            with open(os.path.join("resources/loose", path), "r") as f:
+                data[path[:-5]] = json.loads(f.read())["img"]
+    return data
+
 
 class QVanillaItemIcon(QWidget):
     spritesheet = get_spritesheet()
     sprite_key  = get_sprite_key()
+    spritesheet_blocks = get_block_spritesheet()
+    sprite_key_blocks = get_block_sprite_key()
 
-    def __init__(self, item_id, size, *args, **kwargs):
+    def __init__(self, item_id, size, auto_init=True, *args, **kwargs):
         super(QVanillaItemIcon, self).__init__(*args, **kwargs)
 
         self.item_id = item_id
@@ -33,7 +51,8 @@ class QVanillaItemIcon(QWidget):
         self.mainLayout.addWidget(self.label)
         self.setLayout(self.mainLayout)
 
-        self.set_item(self.item_id)
+        if auto_init:
+            self.set_item(self.item_id)
 
 
     def set_item(self, item_id):
@@ -52,6 +71,25 @@ class QVanillaItemIcon(QWidget):
         self.pixmap = QPixmap.fromImage(image)
         self.pixmap = self.pixmap.scaled(*self.size)
         self.label.setPixmap(self.pixmap)
+
+    def set_block(self, block_id):
+        if block_id not in QVanillaItemIcon.sprite_key_blocks["loose"]:
+            offset_x, offset_y = QVanillaItemIcon.sprite_key_blocks[block_id]
+            self.pixmap = QPixmap(32, 32)
+            image = self.pixmap.toImage()
+            image = image.convertToFormat(QImage.Format.Format_ARGB32)
+            for x in range(32):
+                for y in range(32):
+                    color = QVanillaItemIcon.spritesheet_blocks[y + offset_y*32][x + offset_x*32]
+                    image.setPixelColor(x, y, QColor(*[color[2], color[1], color[0], color[3]]))
+
+            self.pixmap = QPixmap.fromImage(image)
+            self.pixmap = self.pixmap.scaled(*self.size)
+            self.label.setPixmap(self.pixmap)
+        else:
+            self.pixmap = QPixmap("resources/loose/" + block_id + ".png")
+            self.pixmap = self.pixmap.scaledToWidth(*self.size)
+            self.label.setPixmap(self.pixmap)
 
     def set_pixmap(self, pixmap):
         self.pixmap = pixmap.scaled(*self.size)
@@ -79,6 +117,7 @@ class QItemSelectorWindow(QMainWindow):
         self.quit_function = quit_function
         self.current_project = current_project
         self.vanilla = True
+        self.blocks = False
 
         self.num_to_show = h//72 + 1
         self.start_index = 0
@@ -176,7 +215,10 @@ class QItemSelectorWindow(QMainWindow):
             item = self.items[self.start_index + self.num_to_show - 1]
         except IndexError:
             return
-        self.add_item(item)
+        if self.blocks:
+            self.add_block(item)
+        else:
+            self.add_item(item)
 
 
     def prepare_favourite_order(self):
@@ -222,6 +264,15 @@ class QItemSelectorWindow(QMainWindow):
         vanillaItemsLayout.addWidget(vanillaRadioButton, 10)
         vanillaRadioButton.clicked.connect(lambda: self.toggle_set("vanilla_items"))
 
+        vanillaBlocksWidget = QWidget()
+        vanillaBlocksLayout = QHBoxLayout()
+        vanillaBlocksWidget.setLayout(vanillaBlocksLayout)
+        vanillaBlocksLayout.addWidget(QLabel("Vanilla Blocks"), 90)
+        vanillaBlocksRadioButton = QRadioButton()
+        self.setButtons.append(vanillaBlocksRadioButton)
+        vanillaBlocksLayout.addWidget(vanillaBlocksRadioButton, 10)
+        vanillaBlocksRadioButton.clicked.connect(lambda: self.toggle_set("vanilla_blocks"))
+
         if self.current_project != "":
             modItemsWidget = QWidget()
             modItemsLayout = QHBoxLayout()
@@ -233,17 +284,27 @@ class QItemSelectorWindow(QMainWindow):
             modItemsLayout.addWidget(modItemButton, 10)
 
         self.settingsLayout.addWidget(vanillaItemsWidget)
+        self.settingsLayout.addWidget(vanillaBlocksWidget)
         self.settingsLayout.addWidget(modItemsWidget)
 
     
     def toggle_set(self, value):
         if value == "vanilla_items":
+            self.order_file = QItemSelectorWindow.getOrderFile("wiki_order.json")
             self.vanilla = True
-            for i in [1]:
+            self.blocks = False
+            for i in [1, 2]:
+                self.setButtons[i].setChecked(False)      
+        elif value == "vanilla_blocks":
+            self.vanilla = True
+            self.blocks = True
+            self.order_file = QItemSelectorWindow.getOrderFile("../block_orders/wiki_order_blocks.json")
+            for i in [0, 2]:
                 self.setButtons[i].setChecked(False)
         elif value == "mod_items":
             self.vanilla = False
-            for i in [0]:
+            self.blocks = False
+            for i in [0, 1]:
                 self.setButtons[i].setChecked(False)
         self.update_display()
 
@@ -260,9 +321,14 @@ class QItemSelectorWindow(QMainWindow):
     def get_item_ids(self):
         self.items.clear()
         if self.vanilla:
-            for item in self.prepare_favourite_order():
-                if True in [filter_function(item) for filter_function in self.filters] and self.search_filter(item):
-                    self.items.append(item)
+            if not self.blocks:
+                for item in self.prepare_favourite_order():
+                    if True in [filter_function(item) for filter_function in self.filters] and self.search_filter(item):
+                        self.items.append(item)
+            else:
+                for item in self.order_file:
+                    if True in [filter_function(item) for filter_function in self.filters] and self.search_filter(item):
+                            self.items.append(item)
         else:
             for item_file in os.listdir(f"{self.current_project}/items"):
                 with open(f"{self.current_project}/items/{item_file}") as f:
@@ -282,7 +348,10 @@ class QItemSelectorWindow(QMainWindow):
         self.starBoxes.clear()
         for item in self.items[self.start_index:self.start_index+self.num_to_show-1]:
             if self.vanilla:
-                self.add_item(item)
+                if not self.blocks:
+                    self.add_item(item)
+                else:
+                    self.add_block(item)
             else:
                 self.add_mod_item(item)
 
@@ -294,6 +363,11 @@ class QItemSelectorWindow(QMainWindow):
         vanillaIcon = QVanillaItemIcon("redstone", (32, 32))
         vanillaIcon.set_pixmap(pixmap)
         self.add_item(item_id, vanillaIcon, name)
+
+    def add_block(self, item):
+        vanillaIcon = QVanillaItemIcon("redstone", (32, 32), False)
+        vanillaIcon.set_block(item)
+        self.add_item(item, vanillaIcon)
 
     def add_item(self, item, icon=None, itemName=""):
         itemRowWidget = QWidget()
@@ -340,14 +414,14 @@ class QItemSelectorWindow(QMainWindow):
         item_added = ""
         removed = False
         for checkbox in self.checkboxes:
+            stem = "minecraft:" if self.vanilla else ""
             if checkbox.checkState() == 2:
-                stem = "minecraft:" if self.vanilla else ""
                 if stem + checkbox.objectName() not in self.chosen:
                     self.chosen.append(stem + checkbox.objectName())
                     item_added = stem + checkbox.objectName()
                     break
-            elif checkbox.objectName() in self.chosen:
-                self.chosen.remove(checkbox.objectName())
+            elif stem + checkbox.objectName() in self.chosen:
+                self.chosen.remove(stem + checkbox.objectName())
                 removed = True
         if not removed and len(self.chosen) > self.limit and self.limit != -1:
             for checkbox in self.checkboxes:
