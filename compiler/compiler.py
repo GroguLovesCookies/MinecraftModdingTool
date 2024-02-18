@@ -14,6 +14,7 @@ class Compiler:
         self.domain = "net.minecraftmoddingtool." + self.properties["mod_id"]
         self.translations = {}
         self.items = []
+        self.blocks = []
 
     def compile(self):
         self.copy_files()
@@ -23,6 +24,7 @@ class Compiler:
         self.initialize_mod_main()
         self.initialize_fabric_mixins()
         self.initialize_fabric_mod()
+        self.initialize_mod_blocks()
         self.initialize_mod_model_provider()
         self.initialize_textures()
         self.initialize_translations()
@@ -142,6 +144,43 @@ class Compiler:
             f.seek(0)
             f.truncate(0)
             f.write(contents)
+
+    def initialize_mod_blocks(self):
+        resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "block/ModBlocks.java")
+        imports, content = Compiler.parse_template("templates/snippets/block_adder.txt")
+        imports = Compiler.bulk_replace(imports, {f"%domain%": self.domain})
+
+        combined_contents = ""
+        for path in os.listdir(os.path.join(self.current_project, "blocks")):
+            with open(os.path.join(self.current_project, "blocks", path), "r") as f:
+                self.blocks.append(json.loads(f.read()))
+
+        for block in self.blocks:
+            content_copy = content[:]
+            replacements = {
+                f"%blockVar%": block["id"].split(":")[1].upper(),
+                f"%handBreakable%": "true" if block["properties"]["handBreakable"] else "false",
+                f"%breakInstantly%": ".breakInstantly()" if block["properties"]["instaminable"] else "",
+                f"%requiresTool%": ".requiresTool()" if block["properties"]["requiresTool"] else "",
+                f"%luminance%": f".luminance({block['properties']['lightLevel']})" if int(block["properties"]["lightLevel"]) > 0 else "",
+                f"%blockID%": block["id"].split(":")[1]
+            }
+            content_copy = Compiler.bulk_replace(content_copy, replacements)
+            combined_contents += content_copy + "\n"
+
+            self.translations["block." + self.properties["mod_id"] + "." + block["id"].split(":")[1]] = block["name"]
+        
+        with open(resource_path, "r+") as f:
+            contents = f.read()
+            contents = Compiler.bulk_replace(contents, {
+                f"%domain%": self.domain, "%modID%": self.properties["mod_id"], 
+                f"%imports%": imports, f"%registerBlocksHere%": combined_contents
+            })
+            f.seek(0)
+            f.truncate(0)
+            f.write(contents)
+        
+
     
     def initialize_mod_model_provider(self):
         resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "datagen/ModModelProvider.java")
@@ -153,9 +192,19 @@ class Compiler:
             content_copy = content[:]
             content_copy = Compiler.bulk_replace(content_copy, {f"%itemVar%": item["id"].split(":")[1].upper()})
             combined_contents += content_copy + "\n"
+
+        imports2, contents2 = Compiler.parse_template("templates/snippets/register_block_cube_all_model.txt")
+        imports2 = Compiler.bulk_replace(imports2, {f"%domain%": self.domain})
+        
+        combined_contents2 = ""
+        for block in self.blocks:
+            content_copy = contents2[:]
+            content_copy = Compiler.bulk_replace(content_copy, {f"%blockVar%": block["id"].split(":")[1].upper()})
+            combined_contents2 += content_copy + "\n"
         
         with open(resource_path, "r+") as f:
-            contents = Compiler.bulk_replace(f.read(), {f"%domain%": self.domain, f"%imports%": imports, f"%itemModelsHere%": combined_contents})
+            contents = Compiler.bulk_replace(f.read(), {f"%domain%": self.domain, f"%imports%": imports, f"%itemModelsHere%": combined_contents,
+            f"%blockModelsHere%": combined_contents2, f"%blockImports%": imports2})
             f.seek(0)
             f.truncate(0)
             f.write(contents)
@@ -163,6 +212,8 @@ class Compiler:
     def initialize_textures(self):
         for item in self.items:
             shutil.copy(item["texture"], os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "textures/item", item["id"].split(":")[1]+".png"))
+        for block in self.blocks:
+            shutil.copy(block["texture"], os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "textures/block", block["id"].split(":")[1]+".png"))
     
     def initialize_translations(self):
         with open(os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "lang/en_us.json"), "r+") as f:
@@ -215,7 +266,7 @@ class Compiler:
         return combined_contents
 
 
-compiler = Compiler("first_mod")
+compiler = Compiler("cool_minecraft_mod")
 compiler.compile()
 compiler.redo_gradle()
 compiler.run_client()

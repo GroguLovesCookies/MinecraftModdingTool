@@ -1,5 +1,6 @@
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFormLayout, QFileDialog
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFormLayout, QFileDialog, QCheckBox, QComboBox
 from PyQt5.QtGui import QIcon, QRegExpValidator, QValidator
+from PyQt5.QtCore import Qt
 import os
 from item_browser import QItemSelectorWindow
 
@@ -32,6 +33,11 @@ class QForm(QWidget):
 
     def addWidgetWithoutField(self, widget):
         self.layout.addRow(widget)
+        return widget
+
+    def addWidgetWithField(self, widget, fieldID):
+        self.layout.addRow(widget)
+        self.fields[fieldID] = widget
         return widget
 
     def addLabelRow(self, labelLabel, labelText, fieldID):
@@ -73,6 +79,9 @@ class QForm(QWidget):
             all_valid = validator.validate(widget.text(), 0)[0] == QValidator.State.Acceptable and all_valid
         if all_valid:
             self.submitCallback(self)
+
+    def text(self):
+        return self.getValues()
 
 
 class QFilePathBox(QWidget):
@@ -137,3 +146,50 @@ class QItemBrowseBox(QFilePathBox):
         if ":" not in self.selected:
             self.selected = "minecraft:" + self.selected
         self.setText(self.selected)
+
+
+class QCustomCheckBox(QWidget):
+    def __init__(self, text, *args, **kwargs):
+        super(QCustomCheckBox, self).__init__(*args, **kwargs)
+        self.checkbox = QCheckBox()
+        self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+
+        self.layout.addWidget(QLabel(text), 90)
+        self.layout.addWidget(self.checkbox, 10)
+
+    def text(self):
+        return self.checkbox.isChecked()
+
+
+class QCustomComboBox(QWidget):
+    def __init__(self, text, items, *args, **kwargs):
+        super(QCustomComboBox, self).__init__(*args, **kwargs)
+        self.combobox = QComboBox()
+        self.combobox.addItems(items)
+        self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+
+        self.layout.addWidget(QLabel(text), Qt.AlignmentFlag.AlignRight)
+        self.layout.addWidget(self.combobox, Qt.AlignmentFlag.AlignLeft)
+
+    def text(self):
+        return self.combobox.currentText()
+
+
+class QCustomLineEdit(QWidget):
+    def __init__(self, text, *args, **kwargs):
+        super(QCustomLineEdit, self).__init__(*args, **kwargs)
+        self.lineEdit = QLineEdit()
+        self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+
+        self.layout.addWidget(QLabel(text), Qt.AlignmentFlag.AlignRight)
+        self.layout.addWidget(self.lineEdit, Qt.AlignmentFlag.AlignLeft)
+
+    def text(self):
+        return self.lineEdit.text()
+
+    def setText(self, text):
+        self.lineEdit.setText(text)
+

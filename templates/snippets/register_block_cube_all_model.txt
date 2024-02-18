@@ -1,0 +1,5 @@
+!IMPORTS!
+import %domain%.block.ModBlocks;
+
+!CONTENT!
+blockStateModelGenerator.registerSimpleCubeAll(ModBlocks.%blockVar%);

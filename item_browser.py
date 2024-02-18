@@ -187,7 +187,7 @@ class QItemSelectorWindow(QMainWindow):
         return temp_file
 
     def load_favourites(self):
-        with open("favourites.json", "r") as f:
+        with open("favourite.json", "r") as f:
             self.favourites = json.loads(f.read())
 
     def initialize_filters(self):
@@ -372,7 +372,7 @@ class QItemSelectorWindow(QMainWindow):
 
 
     def save_favourites(self):
-        with open("favourites.json", "w") as f:
+        with open("favourite.json", "w") as f:
             f.write(json.dumps(self.favourites))
 
 

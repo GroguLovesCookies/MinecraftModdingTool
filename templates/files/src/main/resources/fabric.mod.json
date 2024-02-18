@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 1,
-	"id": "tutorial-mod",
+	"id": "%modID%",
 	"version": "${version}",
 	"name": "%modName%",
 	"description": "%modDescr%",
@@ -12,7 +12,7 @@
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
 	"license": "MIT",
-	"icon": "assets/tutorial-mod/icon.png",
+	"icon": "assets/%modID%/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [

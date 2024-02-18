@@ -4,3 +4,6 @@
 settings.gradle
 .gradle
 **/loom_cache/
+cool_minecraft_mod
+settings.json
+favourite.json

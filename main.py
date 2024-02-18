@@ -17,7 +17,7 @@ from list_widget import QListWidget
 
 
 CURRENT_PROJECT = ""
-with open("previous_settings.json", "r") as f:
+with open("settings.json", "r") as f:
     previous_settings = json.loads(f.read())
     CURRENT_PROJECT = previous_settings["previous_project"]
 
@@ -32,10 +32,10 @@ def get_chosen_items(items):
 def set_current_project(target):
     global CURRENT_PROJECT
     CURRENT_PROJECT = target
-    with open("previous_settings.json", "r") as f:
+    with open("settings.json", "r") as f:
         previous_settings = json.loads(f.read())
         previous_settings["previous_project"] = target
-    with open("previous_settings.json", "w") as f:
+    with open("settings.json", "w") as f:
         f.write(json.dumps(previous_settings))
 
 
@@ -201,7 +201,7 @@ def initalize_project_editing_window():
     buttonValues = [
         ("New Creative\nMode Tab", lambda: showWindow(create_new_item_group(menuWindow, CURRENT_PROJECT)), (0, 0, 1, 1)),
         ("New Item", lambda: showWindow(create_new_item(menuWindow, CURRENT_PROJECT)), (0, 1, 1, 1)),
-        ("New Block", lambda: True, (0, 2, 1, 1)),
+        ("New Block", lambda: showWindow(create_new_block(menuWindow, CURRENT_PROJECT)), (0, 2, 1, 1)),
         ("New Tool\nSet", lambda: True, (1, 0, 1, 1)),
         ("New Armor\nSet", lambda: True, (1, 1, 1, 1)),
         ("New Block\nSet", lambda: True, (1, 2, 1, 1)),
@@ -265,9 +265,10 @@ def initalize_project_editing_window():
     editLayout.addWidget(editTabs)
 
     values = {}
-    for group in os.listdir(os.path.join(CURRENT_PROJECT, "item_groups")):
-        with open(os.path.join(CURRENT_PROJECT, "item_groups", group), "r") as f:
-            values[os.path.join(CURRENT_PROJECT, "item_groups", group)] = json.loads(f.read())["name"]
+    if os.path.isdir(os.path.join(CURRENT_PROJECT, "item_groups")):
+        for group in os.listdir(os.path.join(CURRENT_PROJECT, "item_groups")):
+            with open(os.path.join(CURRENT_PROJECT, "item_groups", group), "r") as f:
+                values[os.path.join(CURRENT_PROJECT, "item_groups", group)] = json.loads(f.read())["name"]
     editItemGroupsWidget = QListWidget(values, handle_item_group_click)
 
     editItemsWidget = QWidget()
@@ -316,7 +317,12 @@ if __name__ == "__main__":
                         QTabWidget { background-color: #202020; border: none; } \
                         QTabBar::tab:!selected { background-color: #202020; } \
                         QTabBar::tab:selected { background-color: #333; } \
-                        #falseButton { border: none; }")
+                        #falseButton { border: none; } \
+                        QComboBox { background-color: #333; border: none; } \
+                        QComboBox { padding: 0 10px 0 10px; } \
+                        QComboBox:on QListView { padding: -20px; background-color: #333; } \
+                        QComboBox::item:selected { background-color: #444; } \
+                        QComboBox::drop-down { border: none; }")
     
     if CURRENT_PROJECT == "":
         windowParent = QWidget(menuWindow)
