@@ -283,9 +283,19 @@ class QItemSelectorWindow(QMainWindow):
             modItemButton.clicked.connect(lambda: self.toggle_set("mod_items"))
             modItemsLayout.addWidget(modItemButton, 10)
 
+            modBlocksWidget = QWidget()
+            modBlocksLayout = QHBoxLayout()
+            modBlocksWidget.setLayout(modBlocksLayout)
+            modBlocksLayout.addWidget(QLabel("Mod Blocks"), 90)
+            modBlockButton = QRadioButton()
+            self.setButtons.append(modBlockButton)
+            modBlockButton.clicked.connect(lambda: self.toggle_set("mod_blocks"))
+            modBlocksLayout.addWidget(modBlockButton, 10)
+
         self.settingsLayout.addWidget(vanillaItemsWidget)
         self.settingsLayout.addWidget(vanillaBlocksWidget)
         self.settingsLayout.addWidget(modItemsWidget)
+        self.settingsLayout.addWidget(modBlocksWidget)
 
     
     def toggle_set(self, value):
@@ -293,18 +303,23 @@ class QItemSelectorWindow(QMainWindow):
             self.order_file = QItemSelectorWindow.getOrderFile("wiki_order.json")
             self.vanilla = True
             self.blocks = False
-            for i in [1, 2]:
+            for i in [1, 2, 3]:
                 self.setButtons[i].setChecked(False)      
         elif value == "vanilla_blocks":
             self.vanilla = True
             self.blocks = True
             self.order_file = QItemSelectorWindow.getOrderFile("../block_orders/wiki_order_blocks.json")
-            for i in [0, 2]:
+            for i in [0, 2, 3]:
                 self.setButtons[i].setChecked(False)
         elif value == "mod_items":
             self.vanilla = False
             self.blocks = False
-            for i in [0, 1]:
+            for i in [0, 1, 3]:
+                self.setButtons[i].setChecked(False)
+        elif value == "mod_blocks":
+            self.vanilla = False
+            self.blocks = True
+            for i in [0, 1, 2]:
                 self.setButtons[i].setChecked(False)
         self.update_display()
 
@@ -330,9 +345,14 @@ class QItemSelectorWindow(QMainWindow):
                     if True in [filter_function(item) for filter_function in self.filters] and self.search_filter(item):
                             self.items.append(item)
         else:
-            for item_file in os.listdir(f"{self.current_project}/items"):
-                with open(f"{self.current_project}/items/{item_file}") as f:
-                    self.items.append(json.loads(f.read()))
+            if not self.blocks:
+                for item_file in os.listdir(f"{self.current_project}/items"):
+                    with open(f"{self.current_project}/items/{item_file}") as f:
+                        self.items.append(json.loads(f.read()))
+            else:
+                for item_file in os.listdir(f"{self.current_project}/blocks"):
+                    with open(f"{self.current_project}/blocks/{item_file}") as f:
+                        self.items.append(json.loads(f.read()))
         self.scrollContent.setFixedHeight(max(len(self.items) * 72, (self.num_to_show - 2)*72 - 36))
 
     def update_display(self):

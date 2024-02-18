@@ -24,8 +24,11 @@ class Compiler:
         self.items = []
         self.blocks = []
 
+        self.mod_items = []
+
     def compile(self):
         self.copy_files()
+        self.initialize_mod_items_variable()
         self.initialize_gradle_properties()
         self.initialize_mod_items()
         self.initialize_mod_item_groups()
@@ -50,6 +53,11 @@ class Compiler:
         shutil.copytree("templates/javaSRC", os.path.join(self.current_project, "compiled", "src", "main", "java", cur_domain, self.properties["mod_id"]))
 
         shutil.copytree("templates/assets/dummy", os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"]))
+
+    def initialize_mod_items_variable(self):
+        for path in os.listdir(os.path.join(self.current_project, "items")):
+            with open(os.path.join(self.current_project, "items", path)) as f:
+                self.mod_items.append(json.loads(f.read())["id"])
 
     def initialize_gradle_properties(self):
         contents = ""
@@ -110,7 +118,7 @@ class Compiler:
                 iconItem = "ModItems." + icon.split(":")[1].upper()
 
             content_copy = Compiler.bulk_replace(content_copy, {f"%GROUP_NAME%": group["id"].upper(), f"%groupID%": group["id"], 
-            f"%modID%": self.properties["mod_id"], f"%iconItem%": iconItem, f"%Items%": Compiler.get_item_to_item_group_code(group_items)})
+            f"%modID%": self.properties["mod_id"], f"%iconItem%": iconItem, f"%Items%": self.get_item_to_item_group_code(group_items)})
             combined_contents += content_copy + "\n"
             self.translations["itemgroup." + group["id"]] = group["name"]
 
@@ -258,8 +266,7 @@ class Compiler:
             string = string.replace(src, dst)
         return string
 
-    @staticmethod
-    def get_item_to_item_group_code(items):
+    def get_item_to_item_group_code(self, items):
         imports, content = Compiler.parse_template("templates/snippets/item_to_item_group.txt")
         combined_contents = ""
         for item in items:
@@ -270,7 +277,10 @@ class Compiler:
                 else:
                     item_space = "Blocks"
             else:
-                item_space = "ModItems"
+                if item in self.mod_items:
+                    item_space = "ModItems"
+                else:
+                    item_space = "ModBlocks"
 
             content_copy = Compiler.bulk_replace(content_copy, {f"%itemSpace%": item_space, f"%itemVar%": item.split(":")[1].upper()})
             combined_contents += content_copy + "\n"
