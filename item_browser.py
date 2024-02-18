@@ -280,7 +280,7 @@ class QItemSelectorWindow(QMainWindow):
     def initialize_items(self):
         self.checkboxes.clear()
         self.starBoxes.clear()
-        for item in self.items[self.start_index:self.start_index+self.num_to_show]:
+        for item in self.items[self.start_index:self.start_index+self.num_to_show-1]:
             if self.vanilla:
                 self.add_item(item)
             else:
@@ -341,10 +341,11 @@ class QItemSelectorWindow(QMainWindow):
         removed = False
         for checkbox in self.checkboxes:
             if checkbox.checkState() == 2:
-                if checkbox.objectName() not in self.chosen:
-                    stem = "minecraft:" if self.vanilla else ""
+                stem = "minecraft:" if self.vanilla else ""
+                if stem + checkbox.objectName() not in self.chosen:
                     self.chosen.append(stem + checkbox.objectName())
                     item_added = stem + checkbox.objectName()
+                    break
             elif checkbox.objectName() in self.chosen:
                 self.chosen.remove(checkbox.objectName())
                 removed = True
@@ -356,6 +357,7 @@ class QItemSelectorWindow(QMainWindow):
             if len(self.chosen) > self.limit:
                 self.chosen.remove(self.chosen[0])
         self.chosenLabel.setText(f"{len(self.chosen)}/{self.limit}")
+        print(self.chosen)
 
     def toggle_favourites(self):
         for button in self.starBoxes:
