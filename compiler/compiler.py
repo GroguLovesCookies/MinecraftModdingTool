@@ -39,6 +39,8 @@ class Compiler:
         self.initialize_mod_model_provider()
         self.initialize_mod_recipe_provider()
         self.initialize_mod_recipe_provider_smelting()
+        self.initialize_self_drops()
+        self.initialize_mineable_tags()
         self.initialize_textures()
         self.initialize_translations()
 
@@ -197,8 +199,6 @@ class Compiler:
             f.seek(0)
             f.truncate(0)
             f.write(contents)
-        
-
     
     def initialize_mod_model_provider(self):
         resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "datagen/ModModelProvider.java")
@@ -342,11 +342,87 @@ class Compiler:
                 content_copy = Compiler.bulk_replace(content_copy, replacements)
 
                 combined_contents += content_copy + "\n"
-                i += 1
+                i += 1            
 
         with open(resource_path, "r+") as f:
             contents = f.read()
             contents = Compiler.bulk_replace(contents, {f"%importsSmelting%": imports, f"%smeltingRecipes%": combined_contents})
+            f.seek(0)
+            f.truncate(0)
+            f.write(contents)
+    
+    def initialize_self_drops(self):
+        resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "datagen/ModLootTableProvider.java")
+        imports, content = Compiler.parse_template("templates/snippets/register_self_drop.txt")
+        imports = Compiler.bulk_replace(imports, {f"%domain%": self.domain})
+
+        combined_contents = ""
+        for block in self.blocks:
+            content_copy = content[:]
+            block_space, block_var = self.get_space_and_var_of_item(block["id"])
+            content_copy = Compiler.bulk_replace(content_copy, {f"%itemSpace%": block_space, f"%itemVar%": block_var})
+            combined_contents += content_copy + "\n"
+
+        with open(resource_path, "r+") as f:
+            contents = f.read()
+            contents = Compiler.bulk_replace(contents, {f"%domain%": self.domain, f"%addSelfDrops%": combined_contents, f"%imports%": imports})
+            f.seek(0)
+            f.truncate(0)
+            f.write(contents)
+
+    def initialize_mineable_tags(self):
+        resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "datagen/ModBlockTagProvider.java")
+        imports, content = Compiler.parse_template("templates/snippets/register_tags.txt")
+        imports = Compiler.bulk_replace(imports, {f"%domain%": self.domain})
+
+        combined_contents = ""
+        mineables = {"pickaxe": [], "axe": [], "shovel": [], "hoe": [], "sword": []}
+        needs_tool_tier = {"stone": [], "iron": [], "diamond": [], "netherite": []}
+        for block in self.blocks:
+            if block["properties"]["requiredTool"] != "None":
+                mineables[block["properties"]["requiredTool"].lower()].append(block)
+            if block["properties"]["requiresTool"]:
+                needs_tool_tier[block["properties"]["requiredTier"].lower()].append(block)
+
+
+        for key, blocks in mineables.items():
+            content_copy = content[:]
+
+            if len(blocks) == 0:
+                continue
+
+            add_item_text = ""
+            for block in blocks:
+                add_item_text += f".add(ModBlocks.{block['id'].split(':')[1].upper()})\n"
+
+            content_copy = Compiler.bulk_replace(content_copy, {f"%namespace%": "minecraft", "%tagName%": f"mineable/{key}",
+            f"%addItems%": add_item_text})
+
+            combined_contents += content_copy + "\n"
+
+        for key, blocks in needs_tool_tier.items():
+            content_copy = content[:]
+
+            if len(blocks) == 0:
+                continue
+
+            add_item_text = ""
+            for block in blocks:
+                add_item_text += f".add(ModBlocks.{block['id'].split(':')[1].upper()})\n"
+
+            if key == "netherite":
+                content_copy = Compiler.bulk_replace(content_copy, {f"%namespace%": "fabric", f"%tagName%": "needs_tool_level_4",
+                f"%addItems%": add_item_text})
+            else:
+                content_copy = Compiler.bulk_replace(content_copy, {f"%namespace%": "minecraft", "%tagName%": f"needs_{key}_tool",
+                f"%addItems%": add_item_text})
+
+            combined_contents += content_copy + "\n"
+
+
+        with open(resource_path, "r+") as f:
+            contents = f.read()
+            contents = Compiler.bulk_replace(contents, {f"%domain%": self.domain, f"%addTags%": combined_contents, f"%imports%": imports})
             f.seek(0)
             f.truncate(0)
             f.write(contents)

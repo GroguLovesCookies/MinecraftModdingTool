@@ -1,0 +1,12 @@
+!IMPORTS!
+import net.minecraft.util.Identifier;
+import %domain%.block.ModBlocks;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.registry.tag.TagKey;
+
+
+!CONTENT!
+getOrCreateTagBuilder(TagKey.of(RegistryKeys.BLOCK, new Identifier("%namespace%", "%tagName%")))
+    %addItems%;

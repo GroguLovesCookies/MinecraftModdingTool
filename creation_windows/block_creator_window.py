@@ -24,8 +24,6 @@ class BlockCreatorWindow(CreationWindow):
         self.form.addWidgetWithoutField(settingsLabel)
 
         subForm = self.form.addWidgetWithField(QForm(lambda x: x), "settings")
-        advancedSettingsButton = QPushButton("Advanced Settings")
-        advancedSettingsButton.setObjectName("falseButton")
 
         subForm.setStyleSheet("margin-left: 20px; margin-top: 0px;")
 
@@ -40,10 +38,12 @@ class BlockCreatorWindow(CreationWindow):
         self.form.addValidator(lightLevelValidator, lightLevel.lineEdit)
         subForm.setValues({"lightLevel": "0"})
         lightLevel.lineEdit.setValidator(lightLevelValidator)
-
-        requiresTool.checkbox.toggled.connect(lambda: self.setVisibility(requiresTool.checkbox, requiredTool, requiredTier))
-        requiresTool.checkbox.setChecked(True)
-        requiresTool.checkbox.setChecked(False)
+        
+        dropsLabel = QLabel("Drops")
+        dropsLabel.setObjectName("itemGroupChoiceHeading")
+        self.form.addWidgetWithoutField(dropsLabel)
+        dropsForm = self.form.addWidgetWithField(QForm(lambda x: x), "drops")
+        dropsForm.addWidgetWithField(QCustomComboBox("Drop Type", ["Self", "Ores"]), "dropType")
 
 
         self.form.addSubmitButtonRow("Create Block")
@@ -67,7 +67,7 @@ class BlockCreatorWindow(CreationWindow):
                 with open(f"{current_project}/properties.json") as p:
                     modID = json.loads(p.read())["mod_id"]
                 data = {"name": values["name"], "id": f"{modID}:{values['id']}", "texture": f"{current_project}/textures/{filename}",
-                "properties": values["settings"]}
+                "properties": values["settings"], "drops": values["drops"]}
                 f.write(json.dumps(data))
         
         super().handle_creation(form)
