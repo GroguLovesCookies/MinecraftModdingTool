@@ -38,6 +38,7 @@ class Compiler:
         self.initialize_mod_blocks()
         self.initialize_mod_model_provider()
         self.initialize_mod_recipe_provider()
+        self.initialize_mod_recipe_provider_smelting()
         self.initialize_textures()
         self.initialize_translations()
 
@@ -302,7 +303,53 @@ class Compiler:
             f.truncate(0)
             f.write(contents)
 
+    def initialize_mod_recipe_provider_smelting(self):
+        resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "datagen/ModRecipeProvider.java")
+        imports, content = Compiler.parse_template("templates/snippets/smelting_recipe_adder.txt")
+        imports = Compiler.bulk_replace(imports, {f"%domain%": self.domain})
 
+        smelting_path = os.path.join(self.current_project, "smelting")
+        smelting = []
+        for path in os.listdir(smelting_path):
+            with open(os.path.join(smelting_path, path), "r") as f:
+                smelting.append(json.loads(f.read()))
+
+        combined_contents = ""
+        i = 0
+        for recipe in smelting:
+            inputItemSpace, inputItemVar = self.get_space_and_var_of_item(recipe["inputItem"], True)
+            itemSpace, itemVar = self.get_space_and_var_of_item(recipe["outputItem"], True)
+
+            recipe_types = {}
+            recipe_types["Smelting"] = 1
+            if recipe["addBlasting"]:
+                recipe_types["Blasting"] = 0.5
+
+            for recipe_type, mult in recipe_types.items():
+                replacements = {
+                    f"%itemVar%": itemVar,
+                    f"%itemSpace%": itemSpace,
+                    f"%index%": i + 1,
+                    f"%inputItemSpace%": inputItemSpace,
+                    f"%inputItemVar%": inputItemVar,
+                    f"%type%": recipe_type,
+                    f"%experience%": float(recipe["experience"]),
+                    f"%time%": int(int(recipe["smeltTime"])*mult),
+                    f"%itemID%": recipe["outputItem"].split(":")[1]
+                }
+
+                content_copy = content[:]
+                content_copy = Compiler.bulk_replace(content_copy, replacements)
+
+                combined_contents += content_copy + "\n"
+                i += 1
+
+        with open(resource_path, "r+") as f:
+            contents = f.read()
+            contents = Compiler.bulk_replace(contents, {f"%importsSmelting%": imports, f"%smeltingRecipes%": combined_contents})
+            f.seek(0)
+            f.truncate(0)
+            f.write(contents)
     
     def initialize_textures(self):
         for item in self.items:
