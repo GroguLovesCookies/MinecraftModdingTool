@@ -1,6 +1,6 @@
 from creation_windows.creation_window import CreationWindow
-from form import QForm, QCustomCheckBox, QCustomComboBox, QCustomLineEdit, QFilePathBox
-from PyQt5.QtWidgets import QPushButton, QCheckBox, QLabel
+from form import QForm, QCustomCheckBox, QCustomComboBox, QCustomLineEdit, QFilePathBox, QItemBrowseBox
+from PyQt5.QtWidgets import QPushButton, QCheckBox, QLabel, QScrollArea
 from PyQt5.QtCore import QRegExp
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 import shutil
@@ -48,8 +48,21 @@ class BlockCreatorWindow(CreationWindow):
         dropsLabel = QLabel("Drops")
         dropsLabel.setObjectName("itemGroupChoiceHeading")
         self.form.addWidgetWithoutField(dropsLabel)
+        
         dropsForm = self.form.addWidgetWithField(QForm(lambda x: x), "drops")
-        dropsForm.addWidgetWithField(QCustomComboBox("Drop Type", ["Self", "Ores"]), "dropType")
+        
+        dropComboBox = dropsForm.addWidgetWithField(QCustomComboBox("Drop Type", ["Self", "Ores"]), "dropType")
+
+        expMinLineEdit = dropsForm.addWidgetWithField(QCustomLineEdit("Minimum EXP:"), "expMin")
+        expMaxLineEdit = dropsForm.addWidgetWithField(QCustomLineEdit("Maximum EXP:"), "expMax")
+        itemMinLineEdit = dropsForm.addWidgetWithField(QCustomLineEdit("Minimum Items:"), "itemMin")
+        itemMaxLineEdit = dropsForm.addWidgetWithField(QCustomLineEdit("Maximum Items:"), "itemMax")
+        itemDrop = dropsForm.addWidgetRow("Dropped Item:", QItemBrowseBox("Dropped Item", "icons/folder.png", lambda x: x, self.current_project), "droppedItem")
+
+        dropComboBox.combobox.currentIndexChanged.connect(lambda: self.setVisibility(dropComboBox.combobox.currentText() == "Ores", 
+        expMinLineEdit, expMaxLineEdit, itemMinLineEdit, itemMaxLineEdit))
+        dropComboBox.combobox.setCurrentIndex(1)
+        dropComboBox.combobox.setCurrentIndex(0)
 
 
         self.form.addSubmitButtonRow("Create Block")
@@ -61,7 +74,10 @@ class BlockCreatorWindow(CreationWindow):
             return
 
     def initialize_layout(self):
-        self.setCentralWidget(self.form)
+        scrollArea = QScrollArea()
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setWidget(self.form)
+        self.setCentralWidget(scrollArea)
 
     def handle_creation(self, form):
         values = form.getValues()
@@ -84,7 +100,7 @@ class BlockCreatorWindow(CreationWindow):
         
         super().handle_creation(form)
 
-    def setVisibility(self, box, *args):
+    def setVisibility(self, visibility, *args):
         for arg in args:
-            arg.setVisible(box.isChecked())
+            arg.setVisible(visibility)
         

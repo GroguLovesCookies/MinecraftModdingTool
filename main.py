@@ -300,14 +300,14 @@ if __name__ == "__main__":
                         QPushButton { padding: 10px; border: 4px double black; } \
                         #hoverableButton:hover, #falseButton:hover { background-color: #333; } \
                         #mainWindow, QMainWindow { background-color: #222; } \
-                        #scroll { background-color: #202020; } \
+                        QScrollArea QWidget { background-color: #202020; } \
                         QLineEdit { background-color: transparent; border: none; border-bottom: 2px solid black; padding: 5px; } \
                         QLineEdit:focus { border-bottom: 2px solid #32a89d; } \
                         QLineEdit:hover { background-color: #333; } \
                         #itemGroupChoiceHeading { font-size: 40px; margin-bottom: 5px; }  \
                         QCheckBox::indicator { width: 20px; height: 20px; background-color: transparent; border: 2px solid black; margin-top: 4px; } \
                         QCheckBox::indicator:checked { background-color: #32a89d; } \
-                        #scrollArea { border: none; } \
+                        QScrollArea { border: none; background-color: #202020; } \
                         QScrollBar { width: 8px; background: transparent; } \
                         QScrollBar::handle { background-color: #32a89d; border-radius: 4px; } \
                         QScrollBar::add-line { border: none; background: none; } \

@@ -8,6 +8,8 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
+import net.minecraft.block.ExperienceDroppingBlock;
+import net.minecraft.util.math.intprovider.UniformIntProvider;
 
 %imports%
 

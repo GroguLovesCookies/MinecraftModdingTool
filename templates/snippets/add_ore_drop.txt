@@ -1,0 +1,5 @@
+!IMPORTS!
+
+
+!CONTENT!
+addDrop(%itemSpace%.%itemVar%, oreDrops(%itemSpace%.%itemVar%, %dropItemSpace%.%dropItemVar%, %min%.0f, %max%.0f));

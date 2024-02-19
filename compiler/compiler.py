@@ -168,6 +168,7 @@ class Compiler:
     def initialize_mod_blocks(self):
         resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "block/ModBlocks.java")
         imports, content = Compiler.parse_template("templates/snippets/block_adder.txt")
+        imports_exp, content_exp = Compiler.parse_template("templates/snippets/experience_block_adder.txt")
         imports = Compiler.bulk_replace(imports, {f"%domain%": self.domain})
 
         combined_contents = ""
@@ -186,6 +187,11 @@ class Compiler:
                 f"%blockID%": block["id"].split(":")[1],
                 f"%strength%": f".strength({block['properties']['strength']}f)"
             }
+
+            if block["drops"]["dropType"] == "Ores":
+                content_copy = content_exp[:]
+                replacements[f"%expLow%"] = block["drops"]["expMin"]
+                replacements[f"%expHigh%"] = block["drops"]["expMax"]
             content_copy = Compiler.bulk_replace(content_copy, replacements)
             combined_contents += content_copy + "\n"
 
@@ -355,13 +361,23 @@ class Compiler:
     def initialize_self_drops(self):
         resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "datagen/ModLootTableProvider.java")
         imports, content = Compiler.parse_template("templates/snippets/register_self_drop.txt")
+        imports_ore, content_ore = Compiler.parse_template("templates/snippets/add_ore_drop.txt")
         imports = Compiler.bulk_replace(imports, {f"%domain%": self.domain})
 
         combined_contents = ""
         for block in self.blocks:
-            content_copy = content[:]
             block_space, block_var = self.get_space_and_var_of_item(block["id"])
-            content_copy = Compiler.bulk_replace(content_copy, {f"%itemSpace%": block_space, f"%itemVar%": block_var})
+            replacements = {f"%itemSpace%": block_space, f"%itemVar%": block_var}
+            if block["drops"]["dropType"] == "Self":
+                content_copy = content[:]
+            elif block["drops"]["dropType"] == "Ores":
+                content_copy = content_ore[:]
+                replacements[f"%dropItemSpace%"], replacements[f"%dropItemVar%"] = self.get_space_and_var_of_item(block["drops"]["droppedItem"])
+                replacements[f"%min%"] = block["drops"]["itemMin"]
+                replacements[f"%max%"] = block["drops"]["itemMax"]
+
+            content_copy = Compiler.bulk_replace(content_copy, replacements)
+
             combined_contents += content_copy + "\n"
 
         with open(resource_path, "r+") as f:
