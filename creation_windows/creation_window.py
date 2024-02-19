@@ -34,6 +34,9 @@ class CreationWindow(QMainWindow):
     def initialize_form(self):
         self.form.addHiddenInput("currentProject")
         self.form.setValues({"currentProject": self.current_project})
+        nameLineEdit = self.form.addRow("Name:", "name")
+        idLineEdit = self.form.addRow("Custom ID:", "id")
+        nameLineEdit.textChanged.connect(lambda: idLineEdit.setText(CreationWindow.get_valid_id(nameLineEdit)))
 
     def initialize_layout(self):
         ...

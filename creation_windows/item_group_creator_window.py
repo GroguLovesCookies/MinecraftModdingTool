@@ -37,16 +37,11 @@ class ItemGroupCreatorWindow(CreationWindow):
 
     def initialize_form(self):
         super().initialize_form()
-
-        nameLineEdit = self.form.addRow("Name:", "name")
-        idLineEdit = self.form.addRow("Custom ID:", "id")
         itemChosenWidget = self.form.addWidgetRow("Icon Item:", QItemBrowseBox("Select Items", "icons/folder.png", lambda x: x, self.current_project), "iconItem")
 
         chooseMembersButton = QPushButton("Choose Member Items")
         chooseMembersButton.clicked.connect(self.create_selector_window)
         chooseMembersWidget = self.form.addWidgetRow("Items:", chooseMembersButton, "memberItems")
-
-        nameLineEdit.textChanged.connect(lambda: idLineEdit.setText(CreationWindow.get_valid_id(nameLineEdit)))
 
         self.form.layout.addWidget(self.listWidget)
 

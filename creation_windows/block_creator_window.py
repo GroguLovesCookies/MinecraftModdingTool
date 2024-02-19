@@ -12,11 +12,6 @@ class BlockCreatorWindow(CreationWindow):
     def initialize_form(self):
         super().initialize_form()
 
-        nameLineEdit = self.form.addRow("Name:", "name")
-        idLineEdit = self.form.addRow("Custom ID:", "id")
-
-        nameLineEdit.textChanged.connect(lambda: idLineEdit.setText(CreationWindow.get_valid_id(nameLineEdit)))
-
         modelLabel = QLabel("Block Model")
         modelLabel.setObjectName("itemGroupChoiceHeading")
         self.form.addWidgetWithoutField(modelLabel)

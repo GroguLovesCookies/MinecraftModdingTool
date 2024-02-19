@@ -1,0 +1,5 @@
+!IMPORTS!
+import net.minecraft.data.server.recipe.ShapelessRecipeJsonBuilder;
+
+!CONTENT!
+ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, %outputItem%, %outputCount%)%inputs%%criteria%.offerTo(exporter);

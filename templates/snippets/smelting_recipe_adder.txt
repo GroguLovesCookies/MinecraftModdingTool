@@ -1,0 +1,7 @@
+!IMPORTS!
+import java.util.List;
+import net.minecraft.item.ItemConvertible;
+
+!CONTENT!
+List<ItemConvertible> %itemVar%_%index% = List.of(%inputItemSpace%.%inputItemVar%);
+offer%type%(exporter, %itemVar%_%index%, RecipeCategory.MISC, %itemSpace%.%itemVar%, %experience%f, %time%, "%itemID%");

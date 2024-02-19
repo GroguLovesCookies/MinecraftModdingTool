@@ -49,13 +49,9 @@ class ItemCreatorWindow(CreationWindow):
 
     def initialize_form(self):
         super().initialize_form()
-
-        nameLineEdit = self.form.addRow("Item Name:", "name")
-        idLineEdit = self.form.addRow("Custom ID:", "id")
         imagePickerWidget = self.form.addWidgetRow("Item Texture:", QFilePathBox("Choose Texture", "icons/folder.png", lambda x: x, "Images (*.png)", False), "texturePath")
         self.form.addSubmitButtonRow("Create Item")
 
-        nameLineEdit.textChanged.connect(lambda: idLineEdit.setText(CreationWindow.get_valid_id(nameLineEdit)))
         imagePickerWidget.getLineEdit().textChanged.connect(lambda: imagePickerWidget.setIcon(imagePickerWidget.text()))
 
         idValidator = QRegExpValidator(QRegExp("[a-z_]+"))

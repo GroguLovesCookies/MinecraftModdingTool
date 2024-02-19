@@ -229,6 +229,7 @@ class Compiler:
     def initialize_mod_recipe_provider(self):
         resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "datagen/ModRecipeProvider.java")
         imports, content = Compiler.parse_template("templates/snippets/shaped_recipe_adder.txt")
+        imports_shapeless, content_shapeless = Compiler.parse_template("templates/snippets/shapeless_recipe_adder.txt")
         imports = Compiler.bulk_replace(imports, {f"%domain%": self.domain})
 
         recipes_path = os.path.join(self.current_project, "recipes")
@@ -239,43 +240,64 @@ class Compiler:
 
         combined_contents = ""
         for recipe in recipes:
-            content_copy = content[:]
-
             # Find output item
             item_space, item_var = self.get_space_and_var_of_item(recipe["outputItem"])
             output_item = item_space + "." + item_var
 
-            # Find patterns
-            pattern_text = ""
-            for pattern in recipe["patterns"]:
-                pattern_text += f".pattern(\"{pattern}\")"
-            
-            # Get Keys and Criteria
-            key_text = ""
-            criteria_text = ""
-            for key, item in recipe["key"].items():
-                ingredient_space, ingredient_var = self.get_space_and_var_of_item(item, True)
-                key_text += f".input('{key}', {ingredient_space}.{ingredient_var})"
+            if "patterns" in recipe.keys():
+                # This is a shaped recipe
+                content_copy = content[:]
+                
+                # Find Patterns
+                pattern_text = ""
+                for pattern in recipe["patterns"]:
+                    pattern_text += f".pattern(\"{pattern}\")"
+                
+                # Get Keys and Criteria
+                key_text = ""
+                criteria_text = ""
+                for key, item in recipe["key"].items():
+                    ingredient_space, ingredient_var = self.get_space_and_var_of_item(item, True)
+                    key_text += f".input('{key}', {ingredient_space}.{ingredient_var})"
 
-                criteria_text += f".criterion(hasItem({ingredient_space}.{ingredient_var}), conditionsFromItem({ingredient_space}.{ingredient_var}))"
-            
+                    criteria_text += f".criterion(hasItem({ingredient_space}.{ingredient_var}), conditionsFromItem({ingredient_space}.{ingredient_var}))"
+                
 
+                content_copy = Compiler.bulk_replace(content_copy, {
+                    f"%outputItem%": output_item, 
+                    f"%outputCount%": recipe["outputCount"],
+                    f"%patterns%": pattern_text,
+                    f"%keys%": key_text,
+                    f"%criteria%": criteria_text,
+                    f"%id%": recipe["id"]
+                })
+            else:
+                # This is a shapeless recipe
+                content_copy = content_shapeless[:]
 
+                # Find inputs and criteria
+                input_text = ""
+                criteria_text = ""
+                for item, count in recipe["inputs"].items():
+                    input_space, input_var = self.get_space_and_var_of_item(item, True)
+                    input_text += f".input({input_space}.{input_var}, {count})"
+                    criteria_text += f".criterion(hasItem({input_space}.{input_var}), conditionsFromItem({input_space}.{input_var}))"
 
-            content_copy = Compiler.bulk_replace(content_copy, {
-                f"%outputItem%": output_item, 
-                f"%outputCount%": recipe["outputCount"],
-                f"%patterns%": pattern_text,
-                f"%keys%": key_text,
-                f"%criteria%": criteria_text,
-                f"%id%": recipe["id"]
-            })
+                content_copy = Compiler.bulk_replace(content_copy, {
+                    f"%outputItem%": output_item, 
+                    f"%outputCount%": recipe["outputCount"],
+                    f"%inputs%": input_text,
+                    f"%criteria%": criteria_text,
+                    f"%id%": recipe["id"]
+                })
+
 
             combined_contents += content_copy + "\n"
 
         with open(resource_path, "r+") as f:
             contents = f.read()
-            contents = Compiler.bulk_replace(contents, {f"%domain%": self.domain, f"%imports%": imports, f"%craftingRecipes%": combined_contents})
+            contents = Compiler.bulk_replace(contents, {f"%domain%": self.domain, f"%imports%": imports, f"%craftingRecipes%": combined_contents,
+            f"%importsShapeless%": imports_shapeless})
             f.seek(0)
             f.truncate(0)
             f.write(contents)

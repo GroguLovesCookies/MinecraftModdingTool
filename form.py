@@ -161,8 +161,8 @@ class QCustomCheckBox(QWidget):
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
 
-        self.layout.addWidget(QLabel(text), 90)
-        self.layout.addWidget(self.checkbox, 10)
+        self.layout.addWidget(QLabel(text), Qt.AlignmentFlag.AlignLeft)
+        self.layout.addWidget(self.checkbox, Qt.AlignmentFlag.AlignRight)
 
     def text(self):
         return self.checkbox.isChecked()

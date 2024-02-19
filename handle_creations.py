@@ -10,6 +10,7 @@ from creation_windows.item_group_creator_window import ItemGroupCreatorWindow
 from creation_windows.item_creator_window import ItemCreatorWindow
 from creation_windows.block_creator_window import BlockCreatorWindow
 from creation_windows.recipe_creator_window import RecipeCreatorWindow
+from creation_windows.smelting_creator_window import SmeltingCreatorWindow
 
 
 def create_new_item_group(menuWindow, current_project, path=""):
@@ -48,3 +49,12 @@ def create_new_recipe(menuWindow, current_project):
 
 def initialize_recipe_creator_window(current_project):
     return RecipeCreatorWindow("Create New Recipe", 1200, 800, 200, 200, current_project)
+
+
+def create_new_smelting(menuWindow, current_project):
+    menuWindow.hide()
+    return initialize_smelting_creator_window(current_project)
+
+
+def initialize_smelting_creator_window(current_project):
+    return SmeltingCreatorWindow("Create New Smelting Recipe", 1200, 800, 200, 200, current_project)
