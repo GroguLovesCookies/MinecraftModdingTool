@@ -1,8 +1,14 @@
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFormLayout, QFileDialog, QCheckBox, QComboBox
-from PyQt5.QtGui import QIcon, QRegExpValidator, QValidator
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFormLayout, QFileDialog, QCheckBox, QComboBox, QGridLayout, QSizePolicy
+from PyQt5.QtGui import QIcon, QRegExpValidator, QValidator, QPixmap, QIntValidator
 from PyQt5.QtCore import Qt
 import os
-from item_browser import QItemSelectorWindow
+from item_browser import QItemSelectorWindow, QVanillaItemIcon
+import json
+
+
+def get_vanilla_items():
+    with open("resources/item_orders/wiki_order.json", "r") as f:
+        return json.loads(f.read())["order"]
 
 
 class QForm(QWidget):
@@ -193,3 +199,167 @@ class QCustomLineEdit(QWidget):
     def setText(self, text):
         self.lineEdit.setText(text)
 
+
+class QHotBar(QWidget):
+    vanilla_items = get_vanilla_items()
+
+    def __init__(self, current_project, crafting_grid, *args, **kwargs):
+        super(QHotBar, self).__init__(*args, **kwargs)
+        self.items = []
+        self.current_project = current_project
+        self.crafting_grid = crafting_grid
+
+        self.labels = []
+        self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.currentItem = "minecraft:zombie_head"
+
+        for _ in range(9):
+            label = QVanillaItemIcon("air", (32, 32), True, lambda x: self.onClick(x))
+            label.setStyleSheet("background-color: #333; padding: 10px;")
+            self.labels.append(label)
+            self.layout.addWidget(label)
+
+        setupPushButton = QPushButton("Change Hotbar")
+        setupPushButton.clicked.connect(self.startSetupWindow)
+        self.layout.addWidget(setupPushButton)
+
+    def startSetupWindow(self):
+        selectorWindow = QItemSelectorWindow([lambda x: True], "Select Items", 1200, 800, limit=9, quit_function=self.setText, current_project=self.current_project)
+    
+    def setItem(self, widget):
+        if self.currentItem.startswith("minecraft:"):
+            if self.currentItem.split(":")[1] in self.vanilla_items:
+                widget.set_item(self.currentItem.split(":")[1])
+            else:
+                widget.set_block(self.currentItem.split(":")[1])
+        else:
+            widget.item_id = self.currentItem
+            if self.currentItem in self.modItems:
+                with open(os.path.join(self.current_project, "items", self.currentItem.split(":")[1] + ".json"), "r") as f:
+                    item = json.loads(f.read())
+                    name = item["name"]
+                    texture_file = item["texture"]
+                    item_id = item["id"]
+                    pixmap = QPixmap(texture_file)
+                    widget.set_pixmap(pixmap)
+            else:
+                with open(os.path.join(self.current_project, "blocks", self.currentItem.split(":")[1] + ".json"), "r") as f:
+                    item = json.loads(f.read())
+                    name = item["name"]
+                    texture_file = item["texture"]
+                    item_id = item["id"]
+                    pixmap = QPixmap(texture_file)
+                    widget.set_pixmap(pixmap)
+    
+    def onClick(self, widget):
+        item_id = widget.item_id
+        if ":" not in item_id:
+            item_id = "minecraft:" + item_id
+        self.crafting_grid.currentItem = item_id
+
+    def text(self):
+        items = []
+        for label in self.labels:
+            if ":" not in label.item_id:
+                items.append("minecraft:" + label.item_id)
+            else:
+                items.append(label.item_id)
+        return items
+
+    def setText(self, items):
+        for item, label in zip(items, self.labels):
+            self.currentItem = item
+            self.setItem(label)
+
+    @property
+    def modItems(self):
+        items = []
+        for path in os.listdir(os.path.join(self.current_project, "items")):
+            with open(os.path.join(self.current_project, "items", path), "r") as f:
+                items.append(json.loads(f.read())["id"])
+
+        return items
+
+class QCraftingGrid(QWidget):
+    vanilla_items = get_vanilla_items()
+
+    def __init__(self, current_project, *args, **kwargs):
+        super(QCraftingGrid, self).__init__(*args, **kwargs)
+        self.items = []
+        self.current_project = current_project
+
+        self.labels = []
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.resultCount = 0
+
+        self.currentItem = "minecraft:air"
+
+        for i in range(9):
+            label = QVanillaItemIcon("air", (32, 32), True, lambda x: self.setItem(x))
+            label.setStyleSheet("background-color: #333; padding: 10px;")
+            self.labels.append(label)
+            self.layout.addWidget(label, i//3, i%3, 1, 1)
+
+        emptyWidget = QWidget()
+        emptyWidget.setFixedSize(32*4, 32)
+        self.layout.addWidget(emptyWidget, 1, 3, 1, 4)
+        
+        label = QVanillaItemIcon("air", (32, 32), True, lambda x: self.setItem(x))
+        label.setStyleSheet("background-color: #333; padding: 10px;")
+        self.layout.addWidget(label, 1, 7, 1, 1)
+        self.labels.append(label)
+
+        self.countLineEdit = QLineEdit()
+        self.countLineEdit.setValidator(QIntValidator(1, 64))
+        self.layout.addWidget(self.countLineEdit, 1, 8, 1, 2)
+
+        
+    
+    def setItem(self, widget):
+        if self.currentItem.startswith("minecraft:"):
+            if self.currentItem.split(":")[1] in self.vanilla_items:
+                widget.set_item(self.currentItem.split(":")[1])
+            else:
+                widget.set_block(self.currentItem.split(":")[1])
+        else:
+            widget.item_id = self.currentItem
+            if self.currentItem in self.modItems:
+                with open(os.path.join(self.current_project, "items", self.currentItem.split(":")[1] + ".json"), "r") as f:
+                    item = json.loads(f.read())
+                    name = item["name"]
+                    texture_file = item["texture"]
+                    item_id = item["id"]
+                    pixmap = QPixmap(texture_file)
+                    widget.set_pixmap(pixmap)
+            else:
+                with open(os.path.join(self.current_project, "blocks", self.currentItem.split(":")[1] + ".json"), "r") as f:
+                    item = json.loads(f.read())
+                    name = item["name"]
+                    texture_file = item["texture"]
+                    item_id = item["id"]
+                    pixmap = QPixmap(texture_file)
+                    widget.set_pixmap(pixmap)
+    def text(self):
+        items = []
+        for label in self.labels:
+            if ":" not in label.item_id:
+                items.append("minecraft:" + label.item_id)
+            else:
+                items.append(label.item_id)
+        items.append(min(64, int(self.countLineEdit.text())))
+        return items
+
+    @property
+    def modItems(self):
+        items = []
+        for path in os.listdir(os.path.join(self.current_project, "items")):
+            with open(os.path.join(self.current_project, "items", path), "r") as f:
+                items.append(json.loads(f.read())["id"])
+
+        return items

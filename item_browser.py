@@ -22,22 +22,14 @@ def get_block_spritesheet():
     with open("resources/spritesheet_blocks.json") as f:
         return json.loads(f.read())["img"]
 
-def get_loose_blocks():
-    data = {}
-    for path in os.listdir("resources/loose"):
-        if path.endswith(".json"):
-            with open(os.path.join("resources/loose", path), "r") as f:
-                data[path[:-5]] = json.loads(f.read())["img"]
-    return data
-
 
 class QVanillaItemIcon(QWidget):
     spritesheet = get_spritesheet()
-    sprite_key  = get_sprite_key()
+    sprite_key = get_sprite_key()
     spritesheet_blocks = get_block_spritesheet()
     sprite_key_blocks = get_block_sprite_key()
 
-    def __init__(self, item_id, size, auto_init=True, *args, **kwargs):
+    def __init__(self, item_id, size, auto_init=True, click_function=None, *args, **kwargs):
         super(QVanillaItemIcon, self).__init__(*args, **kwargs)
 
         self.item_id = item_id
@@ -51,9 +43,18 @@ class QVanillaItemIcon(QWidget):
         self.mainLayout.addWidget(self.label)
         self.setLayout(self.mainLayout)
 
+        self.activated = False
+
         if auto_init:
             self.set_item(self.item_id)
 
+        if click_function is not None:
+            self.click_function = click_function
+            self.mousePressEvent = self.on_click
+
+    def on_click(self, mouseEvent):
+        self.activated = True
+        self.click_function(self)
 
     def set_item(self, item_id):
         if item_id not in QVanillaItemIcon.sprite_key.keys():
@@ -61,6 +62,7 @@ class QVanillaItemIcon(QWidget):
         self.item_id = item_id
         offset_x, offset_y = QVanillaItemIcon.sprite_key[self.item_id]
 
+        self.pixmap = QPixmap(16, 16)
         image = self.pixmap.toImage()
         image = image.convertToFormat(QImage.Format.Format_ARGB32)
         for x in range(16):
@@ -73,6 +75,9 @@ class QVanillaItemIcon(QWidget):
         self.label.setPixmap(self.pixmap)
 
     def set_block(self, block_id):
+        self.item_id = block_id
+        if block_id == "air":
+            return
         if block_id not in QVanillaItemIcon.sprite_key_blocks["loose"]:
             offset_x, offset_y = QVanillaItemIcon.sprite_key_blocks[block_id]
             self.pixmap = QPixmap(32, 32)
