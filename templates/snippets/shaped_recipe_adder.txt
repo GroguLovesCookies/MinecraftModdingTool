@@ -1,0 +1,11 @@
+!IMPORTS!
+import net.minecraft.data.server.recipe.ShapedRecipeJsonBuilder;
+import %domain%.block.ModBlocks;
+import %domain%.item.ModItems;
+import net.minecraft.util.Identifier;
+import net.minecraft.recipe.book.RecipeCategory;
+import net.minecraft.item.Items;
+import net.minecraft.block.Blocks;
+
+!CONTENT!
+ShapedRecipeJsonBuilder.create(RecipeCategory.MISC, %outputItem%, %outputCount%)%patterns%%keys%%criteria%.offerTo(exporter, new Identifier("%id%"));

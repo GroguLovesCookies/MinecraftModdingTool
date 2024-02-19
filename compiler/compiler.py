@@ -37,6 +37,7 @@ class Compiler:
         self.initialize_fabric_mod()
         self.initialize_mod_blocks()
         self.initialize_mod_model_provider()
+        self.initialize_mod_recipe_provider()
         self.initialize_textures()
         self.initialize_translations()
 
@@ -224,6 +225,62 @@ class Compiler:
             f.seek(0)
             f.truncate(0)
             f.write(contents)
+
+    def initialize_mod_recipe_provider(self):
+        resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "datagen/ModRecipeProvider.java")
+        imports, content = Compiler.parse_template("templates/snippets/shaped_recipe_adder.txt")
+        imports = Compiler.bulk_replace(imports, {f"%domain%": self.domain})
+
+        recipes_path = os.path.join(self.current_project, "recipes")
+        recipes = []
+        for path in os.listdir(recipes_path):
+            with open(os.path.join(recipes_path, path), "r") as f:
+                recipes.append(json.loads(f.read()))
+
+        combined_contents = ""
+        for recipe in recipes:
+            content_copy = content[:]
+
+            # Find output item
+            item_space, item_var = self.get_space_and_var_of_item(recipe["outputItem"])
+            output_item = item_space + "." + item_var
+
+            # Find patterns
+            pattern_text = ""
+            for pattern in recipe["patterns"]:
+                pattern_text += f".pattern(\"{pattern}\")"
+            
+            # Get Keys and Criteria
+            key_text = ""
+            criteria_text = ""
+            for key, item in recipe["key"].items():
+                ingredient_space, ingredient_var = self.get_space_and_var_of_item(item, True)
+                key_text += f".input('{key}', {ingredient_space}.{ingredient_var})"
+
+                criteria_text += f".criterion(hasItem({ingredient_space}.{ingredient_var}), conditionsFromItem({ingredient_space}.{ingredient_var}))"
+            
+
+
+
+            content_copy = Compiler.bulk_replace(content_copy, {
+                f"%outputItem%": output_item, 
+                f"%outputCount%": recipe["outputCount"],
+                f"%patterns%": pattern_text,
+                f"%keys%": key_text,
+                f"%criteria%": criteria_text,
+                f"%id%": recipe["id"]
+            })
+
+            combined_contents += content_copy + "\n"
+
+        with open(resource_path, "r+") as f:
+            contents = f.read()
+            contents = Compiler.bulk_replace(contents, {f"%domain%": self.domain, f"%imports%": imports, f"%craftingRecipes%": combined_contents})
+            f.seek(0)
+            f.truncate(0)
+            f.write(contents)
+
+
     
     def initialize_textures(self):
         for item in self.items:
@@ -263,26 +320,31 @@ class Compiler:
     @staticmethod
     def bulk_replace(string, replacements):
         for src, dst in replacements.items():
-            string = string.replace(src, dst)
+            string = string.replace(src, str(dst))
         return string
+
+    def get_space_and_var_of_item(self, item, ignore_vanilla_blocks=False):
+        if item.startswith("minecraft:"):
+            if item.split(":")[1] in Compiler.vanilla_items or ignore_vanilla_blocks:
+                item_space = "Items"
+            else:
+                item_space = "Blocks"
+        else:
+            if item in self.mod_items:
+                item_space = "ModItems"
+            else:
+                item_space = "ModBlocks"
+        return item_space, item.split(":")[1].upper()
 
     def get_item_to_item_group_code(self, items):
         imports, content = Compiler.parse_template("templates/snippets/item_to_item_group.txt")
         combined_contents = ""
         for item in items:
             content_copy = content[:]
-            if item.startswith("minecraft:"):
-                if item.split(":")[1] in Compiler.vanilla_items:
-                    item_space = "Items"
-                else:
-                    item_space = "Blocks"
-            else:
-                if item in self.mod_items:
-                    item_space = "ModItems"
-                else:
-                    item_space = "ModBlocks"
 
-            content_copy = Compiler.bulk_replace(content_copy, {f"%itemSpace%": item_space, f"%itemVar%": item.split(":")[1].upper()})
+            item_space, item_var = self.get_space_and_var_of_item(item)
+
+            content_copy = Compiler.bulk_replace(content_copy, {f"%itemSpace%": item_space, f"%itemVar%": item_var})
             combined_contents += content_copy + "\n"
         return combined_contents
 

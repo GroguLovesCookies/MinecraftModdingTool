@@ -2,7 +2,7 @@ package %domain%;
 
 import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
-import %domain%.datagen.ModModelProvider;
+import %domain%.datagen.*;
 
 public class ModDataGenerator implements DataGeneratorEntrypoint {
 	@Override
@@ -10,5 +10,6 @@ public class ModDataGenerator implements DataGeneratorEntrypoint {
 		FabricDataGenerator.Pack pack = fabricDataGenerator.createPack();
 
 		pack.addProvider(ModModelProvider::new);
+		pack.addProvider(ModRecipeProvider::new);
 	}
 }
