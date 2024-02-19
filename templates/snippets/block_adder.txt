@@ -4,5 +4,5 @@ import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.Blocks;
 
 !CONTENT!
-public static final FabricBlockSettings %blockVar%_SETTINGS = FabricBlockSettings.create()%breakInstantly%%requiresTool%%luminance%.sounds(BlockSoundGroup.AMETHYST_BLOCK);
+public static final FabricBlockSettings %blockVar%_SETTINGS = FabricBlockSettings.create()%breakInstantly%%requiresTool%%luminance%%strength%.sounds(BlockSoundGroup.AMETHYST_BLOCK);
 public static final Block %blockVar% = registerBlock("%blockID%", new Block(%blockVar%_SETTINGS));

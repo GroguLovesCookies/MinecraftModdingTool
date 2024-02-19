@@ -183,7 +183,8 @@ class Compiler:
                 f"%breakInstantly%": ".breakInstantly()" if block["properties"]["instaminable"] else "",
                 f"%requiresTool%": ".requiresTool()" if block["properties"]["requiresTool"] else "",
                 f"%luminance%": f".luminance({block['properties']['lightLevel']})" if int(block["properties"]["lightLevel"]) > 0 else "",
-                f"%blockID%": block["id"].split(":")[1]
+                f"%blockID%": block["id"].split(":")[1],
+                f"%strength%": f".strength({block['properties']['strength']}f)"
             }
             content_copy = Compiler.bulk_replace(content_copy, replacements)
             combined_contents += content_copy + "\n"

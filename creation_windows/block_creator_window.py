@@ -2,7 +2,7 @@ from creation_windows.creation_window import CreationWindow
 from form import QForm, QCustomCheckBox, QCustomComboBox, QCustomLineEdit, QFilePathBox
 from PyQt5.QtWidgets import QPushButton, QCheckBox, QLabel
 from PyQt5.QtCore import QRegExp
-from PyQt5.QtGui import QIntValidator
+from PyQt5.QtGui import QIntValidator, QDoubleValidator
 import shutil
 import os
 import json
@@ -36,7 +36,13 @@ class BlockCreatorWindow(CreationWindow):
         lightLevel = subForm.addWidgetWithField(QCustomLineEdit("Light Level:"), "lightLevel")
         lightLevelValidator = QIntValidator(0, 15)
         self.form.addValidator(lightLevelValidator, lightLevel.lineEdit)
-        subForm.setValues({"lightLevel": "0"})
+
+        strength = subForm.addRow("Hardness:", "strength")
+        strengthValidator = QDoubleValidator(0, 100, 2)
+        strength.setValidator(strengthValidator)
+        strength.focusOutEvent = lambda e: self.clampValue(0, 100, strength)
+
+        subForm.setValues({"lightLevel": "0", "strength": "20.0"})
         lightLevel.lineEdit.setValidator(lightLevelValidator)
         
         dropsLabel = QLabel("Drops")
@@ -47,6 +53,12 @@ class BlockCreatorWindow(CreationWindow):
 
 
         self.form.addSubmitButtonRow("Create Block")
+
+    def clampValue(self, low, high, widget):
+        try:
+            widget.setText(str(min(high, max(low, float(widget.text())))))
+        except:
+            return
 
     def initialize_layout(self):
         self.setCentralWidget(self.form)
