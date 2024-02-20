@@ -1,9 +1,10 @@
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFormLayout, QFileDialog, QCheckBox, QComboBox, QGridLayout, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFormLayout, QFileDialog, QCheckBox, QComboBox, QGridLayout, QSizePolicy, QScrollArea
 from PyQt5.QtGui import QIcon, QRegExpValidator, QValidator, QPixmap, QIntValidator
 from PyQt5.QtCore import Qt
 import os
 from item_browser import QItemSelectorWindow, QVanillaItemIcon
 import json
+from copy import deepcopy
 
 
 def get_vanilla_items():
@@ -82,12 +83,69 @@ class QForm(QWidget):
     def submit(self):
         all_valid = True
         for widget, validator in self.validators.items():
-            all_valid = validator.validate(widget.text(), 0)[0] == QValidator.State.Acceptable and all_valid
+            try:
+                all_valid = validator.validate(widget.text(), 0)[0] == QValidator.State.Acceptable and all_valid
+            except RuntimeError:
+                continue
         if all_valid:
             self.submitCallback(self)
 
     def text(self):
         return self.getValues()
+
+
+class QFormList(QWidget):
+    def __init__(self, form_creator, add_text, remove_text, *args, **kwargs):
+        super(QFormList, self).__init__(*args, **kwargs)
+        self.mainLayout = QFormLayout()
+        self.setLayout(self.mainLayout)
+
+        menu_bar = QHBoxLayout()
+        addButton = QPushButton(add_text)
+        removeButton = QPushButton(remove_text)
+        addButton.clicked.connect(self.add_form)
+        removeButton.clicked.connect(self.remove_selected)
+        menu_bar.addWidget(addButton)
+        menu_bar.addWidget(removeButton)
+
+        self.mainLayout.addRow(menu_bar)
+
+        self.scrollArea = QScrollArea()
+        self.scrollArea.setWidgetResizable(True)
+
+        self.mainWidget = QWidget()
+        self.scrollArea.setWidget(self.mainWidget)
+        self.mainLayout.addRow(self.scrollArea)
+
+        self.scrollLayout = QFormLayout()
+        self.mainWidget.setLayout(self.scrollLayout)
+        self.checkboxes = {}
+        
+        self.formTemplate = form_creator
+
+    def add_form(self):
+        checkbox = QCheckBox()
+        layout = QHBoxLayout()
+        layout.addWidget(checkbox)
+        form = self.formTemplate()
+        layout.addWidget(form)
+        self.checkboxes[checkbox] = form
+
+        self.scrollLayout.addRow(layout)
+
+    def remove_selected(self):
+        i = 0
+        removed_checkboxes = []
+        for checkbox, form in self.checkboxes.items():
+            if checkbox.isChecked():
+                removed_checkboxes.append(checkbox)
+                self.scrollLayout.removeRow(i)
+            i += 1    
+        for checkbox in removed_checkboxes:
+            self.checkboxes.pop(checkbox)
+
+    def text(self):
+        return [form.getValues() for form in self.checkboxes.values()]
 
 
 class QFilePathBox(QWidget):

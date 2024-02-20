@@ -1,5 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QMainWindow, QHBoxLayout, QVBoxLayout, QFormLayout, QPushButton
 from form import QForm, QFilePathBox
+from PyQt5.QtGui import QRegExpValidator
+from PyQt5.QtCore import QRegExp
 
 
 class CreationWindow(QMainWindow):
@@ -37,6 +39,9 @@ class CreationWindow(QMainWindow):
         nameLineEdit = self.form.addRow("Name:", "name")
         idLineEdit = self.form.addRow("Custom ID:", "id")
         nameLineEdit.textChanged.connect(lambda: idLineEdit.setText(CreationWindow.get_valid_id(nameLineEdit)))
+        idValidator = QRegExpValidator(QRegExp("[a-z_]+"))
+        idLineEdit.setValidator(idValidator)
+        self.form.addValidator(idValidator, idLineEdit)
 
     def initialize_layout(self):
         ...
