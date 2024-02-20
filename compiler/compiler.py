@@ -42,6 +42,7 @@ class Compiler:
         self.initialize_self_drops()
         self.initialize_mineable_tags()
         self.initialize_food_components()
+        self.initialize_fuel_items()
         self.initialize_textures()
         self.initialize_translations()
 
@@ -473,6 +474,28 @@ class Compiler:
             f.truncate(0)
             f.write(contents)
 
+    def initialize_fuel_items(self):
+        resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "item/ModFuelItems.java")
+        imports, content = Compiler.parse_template("templates/snippets/register_fuel_item.txt")
+        imports = Compiler.bulk_replace(imports, {f"%domain%": self.domain})
+
+        combined_contents = ""
+        for item in self.items:
+            if "fuelProperties" in item.keys():
+                fuel_properties = item["fuelProperties"]
+                item_space, item_var = self.get_space_and_var_of_item(item["id"])
+    
+                content_copy = content[:]
+                duration = str(int(float(fuel_properties["burnItems"]) * 200))
+                content_copy = Compiler.bulk_replace(content_copy, {f"%itemVar%": item_var, f"%itemSpace%": item_space, f"%duration%": duration})
+                combined_contents += content_copy + "\n"
+            
+        with open(resource_path, "r+") as f:
+            contents = f.read()
+            contents = Compiler.bulk_replace(contents, {f"%domain%": self.domain, f"%registerFuelItems%": combined_contents})
+            f.seek(0)
+            f.truncate(0)
+            f.write(contents)
     
     def initialize_textures(self):
         for item in self.items:

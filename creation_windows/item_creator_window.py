@@ -1,6 +1,6 @@
 from creation_windows.creation_window import CreationWindow
 from form import QFilePathBox, QForm, QCustomCheckBox, QFormList
-from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QLabel, QPushButton, QWidget
+from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QLabel, QPushButton, QWidget, QScrollArea
 from PyQt5.QtCore import Qt, QRegExp
 from PyQt5.QtGui import QRegExpValidator, QIntValidator, QDoubleValidator
 import os
@@ -34,6 +34,8 @@ class ItemCreatorWindow(CreationWindow):
                 data = {"name": values["name"], "id": f"{modID}:{values['id']}", "texture": f"{current_project}/textures/{filename}"}
                 if values["isFood"]:
                     data["foodProperties"] = values["foodProperties"]
+                if values["isFuel"]:
+                    data["fuelProperties"] = values["fuelProperties"]
                 f.write(json.dumps(data))
         
         for key, checkbox in self.checkboxes.items():
@@ -70,10 +72,24 @@ class ItemCreatorWindow(CreationWindow):
         alwaysEdible = foodForm.addWidgetWithField(QCustomCheckBox("Can Be Eaten When Full:"), "alwaysEdible")
 
         statusEffectFormList = foodForm.addWidgetWithField(QFormList(self.generate_form, "Add Status Effect", "Remove"), "statusEffects")
-        statusEffectFormList.add_form()
-        statusEffectFormList.add_form()
+        statusEffectFormList.setMinimumHeight(300)
 
         isFoodCheckBox.checkbox.toggled.connect(lambda: foodForm.setVisible(isFoodCheckBox.checkbox.isChecked()))
+
+        isFuelCheckBox = self.form.addWidgetWithField(QCustomCheckBox("Is Fuel:"), "isFuel")
+        fuelForm = self.form.addWidgetWithField(QForm(lambda x: x), "fuelProperties")
+        fuelForm.setVisible(False)
+        
+        fuelHeading = QLabel("Fuel Properties")
+        fuelHeading.setObjectName("itemGroupChoiceHeading")
+        fuelForm.addWidgetWithoutField(fuelHeading)
+
+        burnItems = fuelForm.addRow("Items Smelted:", "burnItems")
+        burnItemsValidator = QDoubleValidator(0.1, 9999, 2)
+        burnItems.setValidator(burnItemsValidator)
+        self.form.addValidator(burnItemsValidator, burnItems)
+
+        isFuelCheckBox.checkbox.toggled.connect(lambda: fuelForm.setVisible(isFuelCheckBox.checkbox.isChecked()))
 
         self.form.addSubmitButtonRow("Create Item")
 
@@ -99,7 +115,10 @@ class ItemCreatorWindow(CreationWindow):
         return statusEffectForm
     
     def initialize_layout(self):
-        self.mainLayout.addWidget(self.form, 75)
+        scrollArea = QScrollArea()
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setWidget(self.form)
+        self.mainLayout.addWidget(scrollArea, 75)
         self.mainLayout.addWidget(self.itemGroupChooseWidget, 25)
 
     def initialize_extras(self):

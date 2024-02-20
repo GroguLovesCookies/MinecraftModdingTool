@@ -4,6 +4,7 @@ import net.fabricmc.api.ModInitializer;
 import %domain%.item.ModItems;
 import %domain%.item.ModItemGroups;
 import %domain%.block.ModBlocks;
+import %domain%.item.ModFuelItems;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,5 +18,6 @@ public class ModMain implements ModInitializer {
 		ModItems.registerModItems();
 		ModItemGroups.registerItemGroups();
 		ModBlocks.registerModBlocks();
+		ModFuelItems.registerFuelItems();
 	}
 }

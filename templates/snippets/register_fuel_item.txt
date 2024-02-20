@@ -1,0 +1,3 @@
+!IMPORTS!
+!CONTENT!
+FuelRegistry.INSTANCE.add(%itemSpace%.%itemVar%, %duration%);
