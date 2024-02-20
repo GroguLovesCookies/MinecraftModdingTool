@@ -463,7 +463,7 @@ class Compiler:
                 
                 content_copy = content[:]
                 content_copy = Compiler.bulk_replace(content_copy, {f"%itemVar%": item_var, f"%hunger%": food_properties["hunger"], 
-                f"%saturation%": food_properties["saturation"], f"%statusEffects%": status_effect_code})
+                f"%saturation%": food_properties["saturation"], f"%statusEffects%": status_effect_code, f"%alwaysEdible%": ".alwaysEdible()" if food_properties["alwaysEdible"] else ""})
                 combined_contents += content_copy + "\n"
             
         with open(resource_path, "r+") as f:

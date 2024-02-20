@@ -5,4 +5,4 @@ import net.minecraft.item.FoodComponent;
 
 
 !CONTENT!
-public static final FoodComponent %itemVar% = new FoodComponent.Builder().hunger(%hunger%).saturationModifier(%saturation%f)%statusEffects%.build();
+public static final FoodComponent %itemVar% = new FoodComponent.Builder().hunger(%hunger%).saturationModifier(%saturation%f)%alwaysEdible%%statusEffects%.build();

@@ -55,7 +55,7 @@ class ItemCreatorWindow(CreationWindow):
         isFoodCheckBox = self.form.addWidgetWithField(QCustomCheckBox("Is Food:"), "isFood")
 
         foodForm = self.form.addWidgetWithField(QForm(lambda x: x), "foodProperties")
-        foodForm.setVisible(False)
+        foodForm.setVisible(False)  
 
         foodHeading = QLabel("Food Properties")
         foodHeading.setObjectName("itemGroupChoiceHeading")
@@ -66,6 +66,8 @@ class ItemCreatorWindow(CreationWindow):
 
         foodSaturation = foodForm.addRow("Saturation:", "saturation")
         foodSaturation.setValidator(QDoubleValidator(0, 2, 2))
+
+        alwaysEdible = foodForm.addWidgetWithField(QCustomCheckBox("Can Be Eaten When Full:"), "alwaysEdible")
 
         statusEffectFormList = foodForm.addWidgetWithField(QFormList(self.generate_form, "Add Status Effect", "Remove"), "statusEffects")
         statusEffectFormList.add_form()
