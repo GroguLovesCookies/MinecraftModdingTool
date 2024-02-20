@@ -51,7 +51,7 @@ class CreationWindow(QMainWindow):
 
     def handle_creation(self, form):
         CreationWindow.onDestroy()
-        self.destroy()
+        self.close()
 
     @staticmethod
     def get_valid_id(inputLineEdit):

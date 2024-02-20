@@ -33,10 +33,14 @@ class QForm(QWidget):
         self.fields[fieldID] = lineEdit
         return lineEdit
 
-    def addWidgetRow(self, labelText, widget, fieldID):
-        self.layout.addRow(labelText, widget)
+    def addWidgetRow(self, labelText, widget, fieldID, return_label = False):
+        label = QLabel(labelText)
+        self.layout.addRow(label, widget)
         self.fields[fieldID] = widget
-        return widget
+        if not return_label:
+            return widget
+        else:
+            return widget, label
 
     def addWidgetWithoutField(self, widget):
         self.layout.addRow(widget)
@@ -63,10 +67,14 @@ class QForm(QWidget):
     def addHiddenInput(self, fieldID):
         lineEdit = QLineEdit()
         self.fields[fieldID] = lineEdit
+        return lineEdit
 
     def setValues(self, values):
         for key, value in values.items():
-            self.fields[key].setText(value)
+            if type(value) == str or type(value) == int:
+                self.fields[key].setText(value)
+            else:
+                self.fields[key].setText(value(self))
 
     def getValues(self):
         return {key: value.text() for key, value in self.fields.items()}
@@ -123,15 +131,24 @@ class QFormList(QWidget):
         
         self.formTemplate = form_creator
 
-    def add_form(self):
+    def add_form(self, values={}):
         checkbox = QCheckBox()
+        widget = QWidget()
+        widget.setObjectName("formInList")
         layout = QHBoxLayout()
+        widget.setLayout(layout)
         layout.addWidget(checkbox)
         form = self.formTemplate()
+        if type(values) == dict:
+            form.setValues(values)
         layout.addWidget(form)
         self.checkboxes[checkbox] = form
 
-        self.scrollLayout.addRow(layout)
+        self.scrollLayout.addRow(widget)
+
+    def set_values(self, values={}):
+        for form in self.checkboxes.values():
+            form.setValues(values)
 
     def remove_selected(self):
         i = 0
@@ -240,6 +257,9 @@ class QCustomComboBox(QWidget):
     def text(self):
         return self.combobox.currentText()
 
+    def setText(self, text):
+        self.combobox.setCurrentIndex(text)
+
 
 class QCustomLineEdit(QWidget):
     def __init__(self, text, *args, **kwargs):
@@ -344,7 +364,7 @@ class QHotBar(QWidget):
 class QCraftingGrid(QWidget):
     vanilla_items = get_vanilla_items()
 
-    def __init__(self, current_project, *args, **kwargs):
+    def __init__(self, current_project, output=True, *args, **kwargs):
         super(QCraftingGrid, self).__init__(*args, **kwargs)
         self.items = []
         self.current_project = current_project
@@ -364,18 +384,22 @@ class QCraftingGrid(QWidget):
             self.labels.append(label)
             self.layout.addWidget(label, i//3, i%3, 1, 1)
 
-        emptyWidget = QWidget()
-        emptyWidget.setFixedSize(32*4, 32)
-        self.layout.addWidget(emptyWidget, 1, 3, 1, 4)
+        if output:
+            emptyWidget = QWidget()
+            emptyWidget.setFixedSize(32*4, 32)
+            self.layout.addWidget(emptyWidget, 1, 3, 1, 4)
+            
+            label = QVanillaItemIcon("air", (32, 32), True, lambda x: self.setItem(x))
+            label.setStyleSheet("background-color: #333; padding: 10px;")
+            self.layout.addWidget(label, 1, 7, 1, 1)
+            self.labels.append(label)
         
-        label = QVanillaItemIcon("air", (32, 32), True, lambda x: self.setItem(x))
-        label.setStyleSheet("background-color: #333; padding: 10px;")
-        self.layout.addWidget(label, 1, 7, 1, 1)
-        self.labels.append(label)
-
         self.countLineEdit = QLineEdit()
         self.countLineEdit.setValidator(QIntValidator(1, 64))
-        self.layout.addWidget(self.countLineEdit, 1, 8, 1, 2)
+        if output:
+            self.layout.addWidget(self.countLineEdit, 1, 8, 1, 2)
+        else:
+            self.layout.addWidget(self.countLineEdit, 3, 1, 1, 3)
 
         
     

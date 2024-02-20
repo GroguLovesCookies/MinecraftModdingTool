@@ -204,7 +204,7 @@ def initalize_project_editing_window():
         ("New Block", lambda: showWindow(create_new_block(menuWindow, CURRENT_PROJECT)), (0, 2, 1, 1)),
         ("New Crafting\nRecipe", lambda: showWindow(create_new_recipe(menuWindow, CURRENT_PROJECT)), (1, 0, 1, 1)),
         ("New Smelting\nRecipe", lambda: showWindow(create_new_smelting(menuWindow, CURRENT_PROJECT)), (1, 1, 1, 1)),
-        ("New Block\nSet", lambda: True, (1, 2, 1, 1)),
+        ("New Block\nSet", lambda: showWindow(create_new_block_set(menuWindow, CURRENT_PROJECT)), (1, 2, 1, 1)),
         ("New Tool\nSet", lambda: True, (2, 0, 1, 1)),
         ("New Armor\nSet", lambda: True, (2, 1, 1, 1)),
         ("New Block\nSet", lambda: True, (2, 2, 1, 1)),
@@ -322,7 +322,8 @@ if __name__ == "__main__":
                         QComboBox { padding: 0 10px 0 10px; } \
                         QComboBox:on QListView { padding: -20px; background-color: #333; } \
                         QComboBox::item:selected { background-color: #444; } \
-                        QComboBox::drop-down { border: none; }")
+                        QComboBox::drop-down { border: none; } \
+                        #formInList { border-bottom: 6px double black; background-color: #202020; }")
     
     if CURRENT_PROJECT == "":
         windowParent = QWidget(menuWindow)

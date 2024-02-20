@@ -478,7 +478,7 @@ class QItemSelectorWindow(QMainWindow):
     def return_values(self):
         self.save_favourites()
         self.quit_function(self.chosen)
-        self.destroy(True)
+        self.close()
 
 
     @staticmethod

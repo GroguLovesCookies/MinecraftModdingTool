@@ -5,6 +5,11 @@ import json
 
 
 class RecipeCreatorWindow(CreationWindow):
+    def __init__(self, title, w, h, x, y, current_project, hide_output=False, handle_output=None):
+        self.hide_output = hide_output
+        self.handle_output = handle_output
+        super().__init__(title, w, h, x, y, current_project)
+
     def handle_creation(self, form):
         values = form.getValues()
         if not values["shapeless"]:
@@ -12,24 +17,33 @@ class RecipeCreatorWindow(CreationWindow):
         else:
             ingredients = RecipeCreatorWindow.get_ingredients_from_list(values["craftingGrid"])
 
-        if not os.path.isdir(os.path.join(values["currentProject"], "recipes")):
-            os.mkdir(os.path.join(values["currentProject"], "recipes"))
+        if not self.hide_output:
+            if not os.path.isdir(os.path.join(values["currentProject"], "recipes")):
+                os.mkdir(os.path.join(values["currentProject"], "recipes"))
 
-        with open(os.path.join(values["currentProject"], "recipes", values["id"] + ".json"), "w") as f:
+            with open(os.path.join(values["currentProject"], "recipes", values["id"] + ".json"), "w") as f:
+                if not values["shapeless"]:
+                    data = {"name": values["name"], "id": values["id"], "patterns": patterns, "key": key, "outputItem": values["craftingGrid"][-2],
+                    "outputCount": values["craftingGrid"][-1]}
+                else:
+                    data = {"name": values["name"], "id": values["id"], "inputs": ingredients, "outputItem": values["craftingGrid"][-2],
+                    "outputCount": values["craftingGrid"][-1]}
+                f.write(json.dumps(data))
+        else:
             if not values["shapeless"]:
-                data = {"name": values["name"], "id": values["id"], "patterns": patterns, "key": key, "outputItem": values["craftingGrid"][-2],
-                "outputCount": values["craftingGrid"][-1]}
+                    data = {"name": values["name"], "id": values["id"], "patterns": patterns, "key": key, "outputItem": values["craftingGrid"][-2],
+                    "outputCount": values["craftingGrid"][-1]}
             else:
                 data = {"name": values["name"], "id": values["id"], "inputs": ingredients, "outputItem": values["craftingGrid"][-2],
                 "outputCount": values["craftingGrid"][-1]}
-            f.write(json.dumps(data))
+            self.handle_output(data)
 
         super().handle_creation(form)
 
     def initialize_form(self):
         super().initialize_form()
 
-        craftingGrid = self.form.addWidgetWithField(QCraftingGrid(self.current_project), "craftingGrid")
+        craftingGrid = self.form.addWidgetWithField(QCraftingGrid(self.current_project, not self.hide_output), "craftingGrid")
         self.form.addWidgetWithoutField(QHotBar(self.current_project, craftingGrid))
 
         self.form.addWidgetWithField(QCustomCheckBox("Shapeless"), "shapeless")
