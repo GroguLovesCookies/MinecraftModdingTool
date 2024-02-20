@@ -1,0 +1,5 @@
+!IMPORTS!
+
+
+!CONTENT!
+.statusEffect(new StatusEffectInstance(%effectSpace%.%effectVar%, %duration%, %amplifier%), %chance%f)

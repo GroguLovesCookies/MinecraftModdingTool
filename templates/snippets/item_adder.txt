@@ -4,4 +4,4 @@ import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroupEntries;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 
 !CONTENT!
-public static final Item %itemVar% = registerItem("%itemID%", new Item(new FabricItemSettings()));
+public static final Item %itemVar% = registerItem("%itemID%", new Item(new FabricItemSettings()%food%));

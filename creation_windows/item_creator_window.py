@@ -80,9 +80,11 @@ class ItemCreatorWindow(CreationWindow):
     def generate_form(self):
         statusEffectForm = QForm(lambda x: x)
         statusEffect = statusEffectForm.addRow("Status Effect:", "statusEffect")
-        statusEffectPower = statusEffectForm.addRow("Status Effect Multiplier:", "statusEffectMultiplier")
+        statusEffectPower = statusEffectForm.addRow("Multiplier:", "statusEffectMultiplier")
         statusEffectPowerValidator = QIntValidator(1, 255)
         statusEffectPower.setValidator(statusEffectPowerValidator)
+        statusEffectDuration = statusEffectForm.addRow("Duration (Ticks):", "duration")
+        statusEffectDuration.setValidator(QIntValidator(0, 9999))
         self.form.addValidator(statusEffectPowerValidator, statusEffectPower)
         
 

@@ -41,6 +41,7 @@ class Compiler:
         self.initialize_mod_recipe_provider_smelting()
         self.initialize_self_drops()
         self.initialize_mineable_tags()
+        self.initialize_food_components()
         self.initialize_textures()
         self.initialize_translations()
 
@@ -85,10 +86,14 @@ class Compiler:
 
         for item in self.items:
             self.translations["item." + ".".join(item["id"].split(":"))] = item["name"]
+
+            food_code = ""
+            if "foodProperties" in item.keys():
+                food_code = f".food(ModFoodComponents.{item['id'].split(':')[1].upper()})"
+
             contents_copy = content[:]
-
-            contents_copy = Compiler.bulk_replace(contents_copy, {f"%itemVar%": item["id"].split(":")[1].upper(), f"%itemID%": item["id"].split(":")[1]})
-
+            contents_copy = Compiler.bulk_replace(contents_copy, {f"%itemVar%": item["id"].split(":")[1].upper(), f"%itemID%": item["id"].split(":")[1],
+            f"%food%": food_code})
             combined_contents += contents_copy + "\n"
 
         contents = ""
@@ -443,6 +448,31 @@ class Compiler:
             f.seek(0)
             f.truncate(0)
             f.write(contents)
+
+    def initialize_food_components(self):
+        resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "item/ModFoodComponents.java")
+        imports, content = Compiler.parse_template("templates/snippets/add_food_component.txt")
+        imports = Compiler.bulk_replace(imports, {f"%domain%": self.domain})
+
+        combined_contents = ""
+        for item in self.items:
+            if "foodProperties" in item.keys():
+                food_properties = item["foodProperties"]
+                item_var = self.get_space_and_var_of_item(item["id"])[1]
+                status_effect_code = Compiler.get_status_effect_to_food_component_code(food_properties["statusEffects"])
+                
+                content_copy = content[:]
+                content_copy = Compiler.bulk_replace(content_copy, {f"%itemVar%": item_var, f"%hunger%": food_properties["hunger"], 
+                f"%saturation%": food_properties["saturation"], f"%statusEffects%": status_effect_code})
+                combined_contents += content_copy + "\n"
+            
+        with open(resource_path, "r+") as f:
+            contents = f.read()
+            contents = Compiler.bulk_replace(contents, {f"%domain%": self.domain, f"%foodComponents%": combined_contents, f"%imports%": imports})
+            f.seek(0)
+            f.truncate(0)
+            f.write(contents)
+
     
     def initialize_textures(self):
         for item in self.items:
@@ -484,6 +514,25 @@ class Compiler:
         for src, dst in replacements.items():
             string = string.replace(src, str(dst))
         return string
+
+    @staticmethod
+    def get_status_effect_to_food_component_code(status_effects):
+        imports, content = Compiler.parse_template("templates/snippets/add_status_effect_to_food.txt")
+
+        combined_contents = ""
+        for effect in status_effects:
+            content_copy = content[:]
+            replacements = {
+                f"%effectSpace%": "StatusEffects",
+                f"%effectVar%": effect["statusEffect"].split(":")[1].upper(),
+                f"%duration%": effect["duration"],
+                f"%amplifier%": effect["statusEffectMultiplier"],
+                f"%chance%": str(min(float(effect["statusEffectChance"])/100, 1.0))
+            }
+            content_copy = Compiler.bulk_replace(content_copy, replacements)
+            combined_contents += content_copy
+
+        return combined_contents
 
     def get_space_and_var_of_item(self, item, ignore_vanilla_blocks=False):
         if item.startswith("minecraft:"):

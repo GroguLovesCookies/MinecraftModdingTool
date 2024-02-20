@@ -1,0 +1,8 @@
+!IMPORTS!
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.item.FoodComponent;
+
+
+!CONTENT!
+public static final FoodComponent %itemVar% = new FoodComponent.Builder().hunger(%hunger%).saturationModifier(%saturation%f)%statusEffects%.build();
