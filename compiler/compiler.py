@@ -448,7 +448,7 @@ class Compiler:
 
         combined_contents = ""
         for block in self.blocks:
-            if "blockType" in block.keys():
+            if block["blockType"] != "":
                 if block["blockType"] not in ["Slab", "Door"]:
                     block["drops"] = {"dropType": "Self"}
                 else:

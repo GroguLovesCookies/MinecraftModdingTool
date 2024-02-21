@@ -22,6 +22,13 @@ def get_block_spritesheet():
     with open("resources/spritesheet_blocks.json") as f:
         return json.loads(f.read())["img"]
 
+def get_masks():
+    masks = {"": None}
+    for path in os.listdir("resources/json_masks"):
+        with open(os.path.join("resources/json_masks", path), "r") as f:
+            masks[path.replace("_mask.json", "")] = json.loads(f.read())["mask"]
+    return masks
+
 
 class QVanillaItemIcon(QWidget):
     spritesheet = get_spritesheet()
@@ -33,6 +40,7 @@ class QVanillaItemIcon(QWidget):
         super(QVanillaItemIcon, self).__init__(*args, **kwargs)
 
         self.item_id = item_id
+        self.mask = None
 
         self.label = QLabel("")
         self.pixmap = QPixmap(16, 16)
@@ -85,8 +93,11 @@ class QVanillaItemIcon(QWidget):
             image = image.convertToFormat(QImage.Format.Format_ARGB32)
             for x in range(32):
                 for y in range(32):
+                    alpha_multiplier = 1
+                    if self.mask is not None:
+                        alpha_multiplier = self.mask[y][x]//255
                     color = QVanillaItemIcon.spritesheet_blocks[y + offset_y*32][x + offset_x*32]
-                    image.setPixelColor(x, y, QColor(*[color[2], color[1], color[0], color[3]]))
+                    image.setPixelColor(x, y, QColor(*[color[2], color[1], color[0], color[3]*alpha_multiplier]))
 
             self.pixmap = QPixmap.fromImage(image)
             self.pixmap = self.pixmap.scaled(*self.size)
@@ -98,6 +109,17 @@ class QVanillaItemIcon(QWidget):
 
     def set_pixmap(self, pixmap):
         self.pixmap = pixmap.scaled(*self.size)
+        image = self.pixmap.toImage()
+        image = image.convertToFormat(QImage.Format.Format_ARGB32)
+        for x in range(self.size[0]):
+            for y in range(self.size[1]):
+                alpha_multiplier = 1
+                if self.mask is not None:
+                    alpha_multiplier = self.mask[y][x]//255
+                color = image.pixelColor(x, y).getRgb()
+                image.setPixelColor(x, y, QColor(*[color[0], color[1], color[2], color[3]*alpha_multiplier]))
+
+        self.pixmap = QPixmap.fromImage(image)
         self.label.setPixmap(self.pixmap)
 
 
@@ -110,6 +132,7 @@ class QItemSelectorWindow(QMainWindow):
     filters = {"Favourites": item_filters.favourites_filter,"Armor Trims": item_filters.armor_trim_filter, "Smithing Templates": item_filters.smithing_template_filter, 
     "Pottery Sherds": item_filters.pottery_sherd_filter, "Spawn Eggs": item_filters.spawn_egg_filter, "Tools": item_filters.tools_filter,  "Armor": item_filters.armor_filter, 
     "Music Discs": item_filters.music_disc_filter, "Boats": item_filters.boats_filter, "Minecarts": item_filters.minecarts_filter, "Buckets": item_filters.buckets_filter}
+    masks = get_masks()
 
     def __init__(self, filters, title, w, h, order_file="wiki_order.json", limit=-1, quit_function=lambda x: x, current_project=""):
         super().__init__()
@@ -221,7 +244,10 @@ class QItemSelectorWindow(QMainWindow):
         except IndexError:
             return
         if self.blocks:
-            self.add_block(item)
+            if self.vanilla:
+                self.add_block(item)
+            else:
+                self.add_mod_item(item)
         else:
             self.add_item(item)
 
@@ -382,12 +408,24 @@ class QItemSelectorWindow(QMainWindow):
 
     def add_mod_item(self, item):
         name = item["name"]
+        block_type = ""
         if "texture" not in item.keys():
-            return
-        texture_file = item["texture"]
+            if item["blockType"] == "Door":
+                texture_file = item["itemTexture"]
+                block_type = ""
+            elif item["blockType"] == "Trapdoor":
+                texture_file = item["trapdoorTexture"]
+                block_type = ""
+            else:
+                with open(os.path.join(self.current_project, "blocks", item["blockModel"].split(":")[1] + ".json"), "r") as f:
+                    texture_file = json.loads(f.read())["texture"]
+                block_type = "_".join(item["blockType"].lower().split(" "))
+        else:
+            texture_file = item["texture"]
         item_id = item["id"]
         pixmap = QPixmap(texture_file)
         vanillaIcon = QVanillaItemIcon("redstone", (32, 32))
+        vanillaIcon.mask = QItemSelectorWindow.masks[block_type]
         vanillaIcon.set_pixmap(pixmap)
         self.add_item(item_id, vanillaIcon, name)
 

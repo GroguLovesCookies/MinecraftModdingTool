@@ -348,9 +348,11 @@ if __name__ == "__main__":
         menu_buttons.append(open_button)
 
         # icon = QVanillaItemIcon("leather_helmet", (32, 32))
-        # icon.set_block("redstone_comparator")
+        # with open("resources/json_masks/fence_gate_mask.json", "r") as f:
+            # icon.mask = json.loads(f.read())["mask"]
+        # icon.set_block("yellow_wool")
         # windowLayout.addWidget(icon)
-
+    
         for button in menu_buttons:
             button.setFixedHeight(600//len(menu_buttons) - 10)
             button.raise_()
