@@ -1,0 +1,4 @@
+!IMPORTS!
+
+!CONTENT!
+blockStateModelGenerator.register%blockType%(ModBlocks.%blockVar%);

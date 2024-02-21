@@ -154,14 +154,15 @@ class BlockSetCreatorWindow(CreationWindow):
                 for field in fields:
                     data[field] = deepcopy(block[field])
 
-                data["blockModel"] = block_id
+                data["blockModel"] = properties["mod_id"] + ":" + block_id
+                data["id"] = properties["mod_id"] + ":" + data["id"]
                 f.write(json.dumps(data))
 
             if block["hasCustomRecipe"]:
                 recipe = json.loads(block["customRecipe"])
                 recipe["outputItem"] = properties["mod_id"] + ":" + block["id"]
             else:
-                recipe = BlockSetCreatorWindow.getRecipeFromBlockType(block["blockType"], block_id, block, self.current_project)
+                recipe = BlockSetCreatorWindow.getRecipeFromBlockType(block["blockType"], block_id, block, self.current_project, properties["mod_id"])
 
             with open(os.path.join(self.current_project, "recipes", f"{recipe['id']}.json"), "w") as f:
                 f.write(json.dumps(recipe))
@@ -186,11 +187,11 @@ class BlockSetCreatorWindow(CreationWindow):
             data["outputCount"] = 4
             data["patterns"] = ['  A', ' AA', 'AAA']
         elif blockType == "Button":
-            data["inputs"] = {baseBlock: 1}
+            data["inputs"] = {modID + ":" + baseBlock: 1}
             data["outputCount"] = 1
         elif blockType == "Pressure Plate":
             data["patterns"] = ['AA']
-            data["outputCount"] = 2
+            data["outputCount"] = 1
         elif blockType == "Fence":
             data["patterns"] = ['ABA', 'ABA']
             data["key"]["B"] = "minecraft:stick"

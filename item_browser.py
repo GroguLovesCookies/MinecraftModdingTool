@@ -382,6 +382,8 @@ class QItemSelectorWindow(QMainWindow):
 
     def add_mod_item(self, item):
         name = item["name"]
+        if "texture" not in item.keys():
+            return
         texture_file = item["texture"]
         item_id = item["id"]
         pixmap = QPixmap(texture_file)

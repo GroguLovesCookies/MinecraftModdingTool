@@ -23,6 +23,11 @@ class Compiler:
         self.translations = {}
         self.items = []
         self.blocks = []
+        self.fence_blocks = []
+        self.fence_gate_blocks = []
+        self.wall_blocks = []
+        self.door_blocks = []
+        self.trapdoor_blocks = []
 
         self.mod_items = []
 
@@ -41,8 +46,10 @@ class Compiler:
         self.initialize_mod_recipe_provider_smelting()
         self.initialize_self_drops()
         self.initialize_mineable_tags()
+        self.initialize_block_type_tags()
         self.initialize_food_components()
         self.initialize_fuel_items()
+        self.initialize_mod_client()
         self.initialize_textures()
         self.initialize_translations()
 
@@ -184,6 +191,45 @@ class Compiler:
 
         for block in self.blocks:
             content_copy = content[:]
+            if "blockType" in block.keys():
+                with open(os.path.join(self.current_project, "blocks", block["blockModel"].split(":")[1] + ".json"), "r") as f:
+                    modelBlock = json.loads(f.read())
+                    block["properties"] = modelBlock["properties"]
+                if block["blockType"] == "Stairs":
+                    argsBefore = f"ModBlocks.{block['blockModel'].split(':')[1].upper()}.getDefaultState(), "
+                    argsAfter = ""
+                elif block["blockType"] == "Button":
+                    argsBefore = ""
+                    argsAfter = f".collidable(false), BlockSetType.IRON, {block['pressTime']}, {str(block['arrowTriggerable']).lower()}"
+                elif block["blockType"] == "Pressure Plate":
+                    argsBefore = f"PressurePlateBlock.ActivationRule.{'EVERYTHING' if block['itemTriggerable'] else 'MOBS'}, "
+                    argsAfter = f", BlockSetType.IRON"
+                elif block["blockType"] == "Fence Gate":
+                    argsBefore = ""
+                    argsAfter = f", WoodType.ACACIA"
+                elif block["blockType"] == "Door":
+                    argsBefore = ""
+                    argsAfter = f".nonOpaque(), BlockSetType.{'CHERRY' if block['handOpenableDoor'] else 'IRON'}"
+                elif block["blockType"]  == "Trapdoor":
+                    argsBefore = ""
+                    argsAfter = f".nonOpaque(), BlockSetType.{'CHERRY' if block['handOpenableTrapdoor'] else 'IRON'}"
+                else:
+                    argsBefore = argsAfter = ""
+
+                if block["blockType"] == "Fence":
+                    self.fence_blocks.append(block)
+                elif block["blockType"] == "Fence Gate":
+                    self.fence_gate_blocks.append(block)
+                elif block["blockType"] == "Wall":
+                    self.wall_blocks.append(block)
+                elif block["blockType"] == "Door":
+                    self.door_blocks.append(block)
+                elif block["blockType"] == "Trapdoor":
+                    self.trapdoor_blocks.append(block)
+            else: 
+                argsBefore = argsAfter = ""  
+                block["blockType"] = ""
+
             replacements = {
                 f"%blockVar%": block["id"].split(":")[1].upper(),
                 f"%handBreakable%": "true" if block["properties"]["handBreakable"] else "false",
@@ -191,10 +237,13 @@ class Compiler:
                 f"%requiresTool%": ".requiresTool()" if block["properties"]["requiresTool"] else "",
                 f"%luminance%": f".luminance({block['properties']['lightLevel']})" if int(block["properties"]["lightLevel"]) > 0 else "",
                 f"%blockID%": block["id"].split(":")[1],
-                f"%strength%": f".strength({block['properties']['strength']}f)"
+                f"%strength%": f".strength({block['properties']['strength']}f)",
+                f"%blockType%": "".join(block["blockType"].split()),
+                f"%argsBefore%": argsBefore,
+                f"%argsAfter%": argsAfter
             }
 
-            if block["drops"]["dropType"] == "Ores":
+            if "drops" in block.keys() and block["drops"]["dropType"] == "Ores":
                 content_copy = content_exp[:]
                 replacements[f"%expLow%"] = block["drops"]["expMin"]
                 replacements[f"%expHigh%"] = block["drops"]["expMax"]
@@ -225,17 +274,43 @@ class Compiler:
             combined_contents += content_copy + "\n"
 
         imports2, contents2 = Compiler.parse_template("templates/snippets/register_block_cube_all_model.txt")
+        imports_pool, contents_pool = Compiler.parse_template("templates/snippets/register_block_cube_with_pool.txt")
+        imports_with_pool, contents_with_pool = Compiler.parse_template("templates/snippets/register_pool_model.txt")
+        imports_door, contents_door = Compiler.parse_template("templates/snippets/register_door_trapdoor_model.txt")
         imports2 = Compiler.bulk_replace(imports2, {f"%domain%": self.domain})
         
         combined_contents2 = ""
+        combined_contents_pooled = ""
         for block in self.blocks:
-            content_copy = contents2[:]
-            content_copy = Compiler.bulk_replace(content_copy, {f"%blockVar%": block["id"].split(":")[1].upper()})
-            combined_contents2 += content_copy + "\n"
+            if block["blockType"] != "":
+                if block["blockType"] not in ["Trapdoor", "Door"]:
+                    content_copy = contents_with_pool[:]
+                    blockTypeNew = block["blockType"].split(" ")
+                    blockTypeNew[0] = blockTypeNew[0].lower()
+                    blockTypeNew = "".join(blockTypeNew)
+                    content_copy = Compiler.bulk_replace(content_copy, {
+                        f"%blockType%": blockTypeNew, 
+                        f"%modelBlockVar%": block["blockModel"].split(":")[1].upper()
+                    })
+                    content_copy = Compiler.bulk_replace(content_copy, {f"%blockVar%": block["id"].split(":")[1].upper()})
+                else:
+                    content_copy = contents_door[:]
+                    content_copy = Compiler.bulk_replace(content_copy, {
+                        f"%blockType%": block["blockType"],
+                        f"%blockVar%": self.get_space_and_var_of_item(block["id"])[1]
+                    })
+                combined_contents_pooled += content_copy + "\n"
+            else:
+                if "generatePool" not in block.keys() or not block["generatePool"]:
+                    content_copy = contents2[:]
+                else:
+                    content_copy = contents_pool[:]
+                content_copy = Compiler.bulk_replace(content_copy, {f"%blockVar%": block["id"].split(":")[1].upper()})
+                combined_contents2 += content_copy + "\n"
         
         with open(resource_path, "r+") as f:
             contents = Compiler.bulk_replace(f.read(), {f"%domain%": self.domain, f"%imports%": imports, f"%itemModelsHere%": combined_contents,
-            f"%blockModelsHere%": combined_contents2, f"%blockImports%": imports2})
+            f"%blockModelsHere%": combined_contents2, f"%blockImports%": imports2, f"%blockPooledModelsHere%": combined_contents_pooled})
             f.seek(0)
             f.truncate(0)
             f.write(contents)
@@ -368,10 +443,16 @@ class Compiler:
         resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "datagen/ModLootTableProvider.java")
         imports, content = Compiler.parse_template("templates/snippets/register_self_drop.txt")
         imports_ore, content_ore = Compiler.parse_template("templates/snippets/add_ore_drop.txt")
+        imports_door_slab, content_door_slab = Compiler.parse_template("templates/snippets/add_door_slab_drop.txt")
         imports = Compiler.bulk_replace(imports, {f"%domain%": self.domain})
 
         combined_contents = ""
         for block in self.blocks:
+            if "blockType" in block.keys():
+                if block["blockType"] not in ["Slab", "Door"]:
+                    block["drops"] = {"dropType": "Self"}
+                else:
+                    block["drops"] = {"dropType": "SpecialBlock"}
             block_space, block_var = self.get_space_and_var_of_item(block["id"])
             replacements = {f"%itemSpace%": block_space, f"%itemVar%": block_var}
             if block["drops"]["dropType"] == "Self":
@@ -381,6 +462,9 @@ class Compiler:
                 replacements[f"%dropItemSpace%"], replacements[f"%dropItemVar%"] = self.get_space_and_var_of_item(block["drops"]["droppedItem"])
                 replacements[f"%min%"] = block["drops"]["itemMin"]
                 replacements[f"%max%"] = block["drops"]["itemMax"]
+            elif block["drops"]["dropType"] == "SpecialBlock":
+                content_copy = content_door_slab[:]
+                replacements[f"%blockType%"] = block["blockType"].lower()
 
             content_copy = Compiler.bulk_replace(content_copy, replacements)
 
@@ -429,9 +513,7 @@ class Compiler:
             if len(blocks) == 0:
                 continue
 
-            add_item_text = ""
-            for block in blocks:
-                add_item_text += f".add(ModBlocks.{block['id'].split(':')[1].upper()})\n"
+            add_item_text = Compiler.get_blocks_to_tag_code(blocks)
 
             if key == "netherite":
                 content_copy = Compiler.bulk_replace(content_copy, {f"%namespace%": "fabric", f"%tagName%": "needs_tool_level_4",
@@ -446,6 +528,29 @@ class Compiler:
         with open(resource_path, "r+") as f:
             contents = f.read()
             contents = Compiler.bulk_replace(contents, {f"%domain%": self.domain, f"%addTags%": combined_contents, f"%imports%": imports})
+            f.seek(0)
+            f.truncate(0)
+            f.write(contents)
+
+    def initialize_block_type_tags(self):
+        resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "datagen/ModBlockTagProvider.java")
+        imports, content = Compiler.parse_template("templates/snippets/register_tags.txt")
+        imports = Compiler.bulk_replace(imports, {f"%domain%": self.domain})
+
+        combined_contents = ""
+        block_types = {"fences": self.fence_blocks, "fence_gates": self.fence_gate_blocks, "walls": self.wall_blocks}
+        for block_tag, block_list in block_types.items():
+            content_copy = content[:]
+            replacements = {
+                f"%namespace%": "minecraft",
+                f"%tagName%": block_tag,
+                f"%addItems%": Compiler.get_blocks_to_tag_code(block_list)
+            }
+            combined_contents += Compiler.bulk_replace(content_copy, replacements) + "\n"
+
+        with open(resource_path, "r+") as f:
+            contents = f.read()
+            contents = Compiler.bulk_replace(contents, {f"%addSpecialBlockTags%": combined_contents})
             f.seek(0)
             f.truncate(0)
             f.write(contents)
@@ -496,12 +601,40 @@ class Compiler:
             f.seek(0)
             f.truncate(0)
             f.write(contents)
+
+    def initialize_mod_client(self):
+        resource_path = os.path.join(self.current_project, "compiled/src/main/java", *self.domain.split("."), "ModClient.java")
+        imports, content = Compiler.parse_template("templates/snippets/add_cutout_blocks.txt")
+
+        combined_contents = ""
+        for block in [*self.door_blocks, *self.trapdoor_blocks]:
+            content_copy = content[:]
+            content_copy = Compiler.bulk_replace(content_copy, {
+                f"%blockVar%": self.get_space_and_var_of_item(block["id"])[1]
+            })
+            combined_contents += content_copy + "\n"
+
+        with open(resource_path, "r+") as f:
+            contents = f.read()
+            contents = Compiler.bulk_replace(contents, {f"%domain%": self.domain, f"%addCutoutBlocks%": combined_contents})
+            f.seek(0)
+            f.truncate(0)
+            f.write(contents)
+
     
     def initialize_textures(self):
         for item in self.items:
             shutil.copy(item["texture"], os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "textures/item", item["id"].split(":")[1]+".png"))
         for block in self.blocks:
-            shutil.copy(block["texture"], os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "textures/block", block["id"].split(":")[1]+".png"))
+            if block["blockType"] != "":
+                if block["blockType"] == "Door":
+                    shutil.copy(block["bottomTexture"], os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "textures/block", block["id"].split(":")[1]+"_bottom.png"))
+                    shutil.copy(block["topTexture"], os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "textures/block", block["id"].split(":")[1]+"_top.png"))
+                    shutil.copy(block["itemTexture"], os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "textures/item", block["id"].split(":")[1]+".png"))
+                elif block["blockType"] == "Trapdoor":
+                    shutil.copy(block["trapdoorTexture"], os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "textures/block", block["id"].split(":")[1]+".png"))
+            else:
+                shutil.copy(block["texture"], os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "textures/block", block["id"].split(":")[1]+".png"))
     
     def initialize_translations(self):
         with open(os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "lang/en_us.json"), "r+") as f:
@@ -556,6 +689,13 @@ class Compiler:
             combined_contents += content_copy
 
         return combined_contents
+
+    @staticmethod
+    def get_blocks_to_tag_code(blocks):
+        add_item_text = ""
+        for block in blocks:
+            add_item_text += f".add(ModBlocks.{block['id'].split(':')[1].upper()})\n"
+        return add_item_text
 
     def get_space_and_var_of_item(self, item, ignore_vanilla_blocks=False):
         if item.startswith("minecraft:"):

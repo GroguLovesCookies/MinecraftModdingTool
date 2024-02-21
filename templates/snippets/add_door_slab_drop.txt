@@ -1,0 +1,4 @@
+!IMPORTS!
+
+!CONTENT!
+addDrop(%itemSpace%.%itemVar%, %blockType%Drops(%itemSpace%.%itemVar%));

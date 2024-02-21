@@ -1,0 +1,4 @@
+!IMPORTS!
+
+!CONTENT!
+BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.%blockVar%, RenderLayer.getCutout());

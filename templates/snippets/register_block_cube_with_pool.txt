@@ -1,0 +1,4 @@
+!IMPORTS!
+
+!CONTENT!
+BlockStateModelGenerator.BlockTexturePool %blockVar%_POOL = blockStateModelGenerator.registerCubeAllModelTexturePool(ModBlocks.%blockVar%);

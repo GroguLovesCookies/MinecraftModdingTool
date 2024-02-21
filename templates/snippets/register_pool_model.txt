@@ -1,0 +1,4 @@
+!IMPORTS!
+
+!CONTENT!
+%modelBlockVar%_POOL.%blockType%(ModBlocks.%blockVar%);
