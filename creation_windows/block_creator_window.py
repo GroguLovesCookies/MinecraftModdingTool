@@ -9,6 +9,18 @@ import json
 
 
 class BlockCreatorWindow(CreationWindow):
+    def __init__(self, title, w, h, x, y, current_project):
+        self.toolMaterials = BlockCreatorWindow.get_tool_materials(current_project)
+        self.toolMaterials["Stone"] = [1, "stone"]
+        self.toolMaterials["Iron"] = [2, "iron"]
+        self.toolMaterials["Diamond"] = [3, "diamond"]
+        self.toolMaterials["Netherite"] = [4, "netherite"]
+
+        self.toolMaterialOptions = sorted(self.toolMaterials.keys(), key = lambda x: self.toolMaterials[x][0])
+        self.toolMaterialIDs = [self.toolMaterials[x][1] for x in self.toolMaterialOptions]
+
+        super().__init__(title, w, h, x, y, current_project)
+
     def initialize_form(self):
         super().initialize_form()
 
@@ -32,7 +44,7 @@ class BlockCreatorWindow(CreationWindow):
         requiresTool = subForm.addWidgetWithField(QCustomCheckBox("Requires Tool:"), "requiresTool")
 
         requiredTool = subForm.addWidgetWithField(QCustomComboBox("Required Tool:", ["Pickaxe", "Axe", "Shovel", "Hoe", "Sword"]), "requiredTool")
-        requiredTier = subForm.addWidgetWithField(QCustomComboBox("Required Tier:", ["Stone", "Iron", "Diamond", "Netherite"]), "requiredTier")
+        requiredTier = subForm.addWidgetWithField(QCustomComboBox("Required Tier:", self.toolMaterialOptions, self.toolMaterialIDs), "requiredTier")
         lightLevel = subForm.addWidgetWithField(QCustomLineEdit("Light Level:"), "lightLevel")
         lightLevelValidator = QIntValidator(0, 15)
         self.form.addValidator(lightLevelValidator, lightLevel.lineEdit)
@@ -103,4 +115,16 @@ class BlockCreatorWindow(CreationWindow):
     def setVisibility(self, visibility, *args):
         for arg in args:
             arg.setVisible(visibility)
+
+
+    @staticmethod
+    def get_tool_materials(current_project):
+        tool_materials = {}
+        if os.path.isdir(f"{current_project}/tool_materials"):
+            for file in os.listdir(f"{current_project}/tool_materials"):
+                with open(os.path.join(current_project, "tool_materials", file)) as f:
+                    content = json.loads(f.read())
+                    name_to_use = content["name"].replace(" Tool Material", "")
+                    tool_materials[name_to_use] = [int(content["miningLevel"]), content["id"]]
+        return tool_materials
         

@@ -247,18 +247,23 @@ class QCustomCheckBox(QWidget):
 
 
 class QCustomComboBox(QWidget):
-    def __init__(self, text, items, *args, **kwargs):
+    def __init__(self, text, items, true_values=[], *args, **kwargs):
         super(QCustomComboBox, self).__init__(*args, **kwargs)
         self.combobox = QComboBox()
         self.combobox.addItems(items)
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
 
+        if true_values == []:
+            self.true_values = items
+        else:
+            self.true_values = true_values
+
         self.layout.addWidget(QLabel(text), Qt.AlignmentFlag.AlignRight)
         self.layout.addWidget(self.combobox, Qt.AlignmentFlag.AlignLeft)
 
     def text(self):
-        return self.combobox.currentText()
+        return self.true_values[self.combobox.currentIndex()]
 
     def setText(self, text):
         self.combobox.setCurrentIndex(text)

@@ -499,6 +499,10 @@ class Compiler:
         combined_contents = ""
         mineables = {"pickaxe": [], "axe": [], "shovel": [], "hoe": [], "sword": []}
         needs_tool_tier = {"stone": [], "iron": [], "diamond": [], "netherite": []}
+        custom_mining_levels = {}
+        for material in self.tool_materials:
+            needs_tool_tier[material["id"]] = []
+            custom_mining_levels[material["id"]] = material["miningLevel"]
         for block in self.blocks:
             if block["properties"]["requiredTool"] != "None":
                 mineables[block["properties"]["requiredTool"].lower()].append(block)
@@ -531,6 +535,9 @@ class Compiler:
 
             if key == "netherite":
                 content_copy = Compiler.bulk_replace(content_copy, {f"%namespace%": "fabric", f"%tagName%": "needs_tool_level_4",
+                f"%addItems%": add_item_text})
+            elif key in custom_mining_levels.keys():
+                content_copy = Compiler.bulk_replace(content_copy, {f"%namespace%": "fabric", f"%tagName%": f"needs_tool_level_{custom_mining_levels[key]}",
                 f"%addItems%": add_item_text})
             else:
                 content_copy = Compiler.bulk_replace(content_copy, {f"%namespace%": "minecraft", "%tagName%": f"needs_{key}_tool",
