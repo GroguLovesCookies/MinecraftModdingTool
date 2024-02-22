@@ -30,11 +30,13 @@ class Compiler:
         self.trapdoor_blocks = []
 
         self.mod_items = []
+        self.tool_materials = []
 
     def compile(self):
         self.copy_files()
         self.initialize_mod_items_variable()
         self.initialize_gradle_properties()
+        self.initialize_tool_materials()
         self.initialize_mod_items()
         self.initialize_mod_item_groups()
         self.initialize_mod_main()
@@ -98,10 +100,22 @@ class Compiler:
             food_code = ""
             if "foodProperties" in item.keys():
                 food_code = f".food(ModFoodComponents.{item['id'].split(':')[1].upper()})"
+            
+            if "toolProperties" in item.keys():
+                tool_material = None
+                for material in self.tool_materials:
+                    if item["toolProperties"]["toolMaterial"] == material["name"]:
+                        tool_material = material
+                        break
+                item_type = item["toolProperties"]["toolType"]
+                args_before = f"ModToolMaterial.{tool_material['id'].upper()}, {item['toolProperties']['attackDamage']}, {item['toolProperties']['attackSpeed']}f, "
+            else:
+                args_before = ""
+                item_type = ""
 
             contents_copy = content[:]
             contents_copy = Compiler.bulk_replace(contents_copy, {f"%itemVar%": item["id"].split(":")[1].upper(), f"%itemID%": item["id"].split(":")[1],
-            f"%food%": food_code})
+            f"%food%": food_code, f"%argsBefore%": args_before, f"%type%": item_type})
             combined_contents += contents_copy + "\n"
 
         contents = ""
@@ -622,6 +636,40 @@ class Compiler:
             f.write(contents)
 
     
+    def initialize_tool_materials(self):
+        for path in os.listdir(os.path.join(self.current_project, "tool_materials")):
+            with open(os.path.join(self.current_project, "tool_materials", path), "r") as f:
+                self.tool_materials.append(json.loads(f.read()))
+
+        resource_path = os.path.join(self.current_project, "compiled/src/main/java/", *self.domain.split("."), "item/ModToolMaterial.java")
+        imports, content = Compiler.parse_template("templates/snippets/add_tool_material.txt")
+
+        combined_contents = ""
+        for material in self.tool_materials:
+            content_copy = content[:]
+
+            replacements = {
+                f"%name%": material["id"].upper(),
+                f"%miningLevel%": material["miningLevel"],
+                f"%durability%": material["durability"],
+                f"%miningSpeed%": material["miningSpeed"],
+                f"%attackDamage%": material["attackDamage"],
+                f"%attackSpeed%": material["attackSpeed"],
+                f"%enchantability%": material["enchantability"]
+            }
+
+            replacements[f"%repairSpace%"], replacements[f"%repairVar%"] = self.get_space_and_var_of_item(material["repairItem"])
+
+            content_copy = Compiler.bulk_replace(content_copy, replacements)
+            combined_contents += content_copy + "\n"
+        
+        with open(resource_path, "r+") as f:
+            contents = f.read()
+            contents = Compiler.bulk_replace(contents, {f"%domain%": self.domain, f"%toolMaterials%": combined_contents})
+            f.seek(0)
+            f.truncate(0)
+            f.write(contents)
+
     def initialize_textures(self):
         for item in self.items:
             shutil.copy(item["texture"], os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "textures/item", item["id"].split(":")[1]+".png"))
@@ -636,7 +684,7 @@ class Compiler:
             else:
                 shutil.copy(block["texture"], os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "textures/block", block["id"].split(":")[1]+".png"))
     
-    def initialize_translations(self):
+    def initialize_translations(self):  
         with open(os.path.join(self.current_project, "compiled/src/main/resources/assets/", self.properties["mod_id"], "lang/en_us.json"), "r+") as f:
             f.write(json.dumps(self.translations))
 

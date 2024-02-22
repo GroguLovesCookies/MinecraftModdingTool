@@ -1,5 +1,5 @@
 from creation_windows.creation_window import CreationWindow
-from form import QFilePathBox, QForm, QCustomCheckBox, QFormList
+from form import QFilePathBox, QForm, QCustomCheckBox, QFormList, QCustomComboBox
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QLabel, QPushButton, QWidget, QScrollArea
 from PyQt5.QtCore import Qt, QRegExp
 from PyQt5.QtGui import QRegExpValidator, QIntValidator, QDoubleValidator
@@ -12,6 +12,13 @@ class ItemCreatorWindow(CreationWindow):
     def __init__(self, title, w, h, x, y, current_project):
         self.checkboxes = {}
         self.itemGroupChooseWidget = QWidget()
+
+        self.toolMaterials = {}
+        self.mod_items = ItemCreatorWindow.get_mod_items(current_project)
+        for path in os.listdir(os.path.join(current_project, "tool_materials")):
+            with open(os.path.join(current_project, "tool_materials", path), "r") as f:
+                content = json.loads(f.read())
+                self.toolMaterials[content["name"]] = content["repairItem"]
 
         super().__init__(title, w, h, x, y, current_project)
 
@@ -36,6 +43,13 @@ class ItemCreatorWindow(CreationWindow):
                     data["foodProperties"] = values["foodProperties"]
                 if values["isFuel"]:
                     data["fuelProperties"] = values["fuelProperties"]
+                if values["isTool"]:
+                    generateRecipe = values["toolProperties"].pop("generateRecipe")
+                    data["toolProperties"] = values["toolProperties"]
+                    if generateRecipe:
+                        recipe = self.get_recipe_from_item(values)
+                        with open(os.path.join(self.current_project, "recipes", recipe["id"] + ".json"), "w") as f_recipe:
+                            f_recipe.write(json.dumps(recipe))
                 f.write(json.dumps(data))
         
         for key, checkbox in self.checkboxes.items():
@@ -87,9 +101,31 @@ class ItemCreatorWindow(CreationWindow):
         burnItems = fuelForm.addRow("Items Smelted:", "burnItems")
         burnItemsValidator = QDoubleValidator(0.1, 9999, 2)
         burnItems.setValidator(burnItemsValidator)
-        self.form.addValidator(burnItemsValidator, burnItems)
 
         isFuelCheckBox.checkbox.toggled.connect(lambda: fuelForm.setVisible(isFuelCheckBox.checkbox.isChecked()))
+        
+        isToolCheckBox = self.form.addWidgetWithField(QCustomCheckBox("Is Tool:"), "isTool")
+        toolForm = self.form.addWidgetWithField(QForm(lambda x: x), "toolProperties")
+        toolForm.setVisible(False)
+        
+        toolHeading = QLabel("Tool Properties")
+        toolHeading.setObjectName("itemGroupChoiceHeading")
+        toolForm.addWidgetWithoutField(toolHeading)
+
+        toolForm.addWidgetWithField(QCustomComboBox("Tool Type:", ["Pickaxe", "Axe", "Sword", "Shovel", "Hoe"]), "toolType")
+        toolForm.addWidgetWithField(QCustomComboBox("Tool Material:", list(self.toolMaterials.keys())), "toolMaterial")
+        attackDamage = toolForm.addRow("Attack Damage:", "attackDamage")
+        attackDamageValidator = QIntValidator(0, 99)
+        attackDamage.setValidator(attackDamageValidator)
+
+        attackSpeed = toolForm.addRow("Attack Speed:", "attackSpeed")
+        attackSpeedValidator = QDoubleValidator(0, 99, 2)
+        attackSpeed.setValidator(attackSpeedValidator)
+
+        generateRecipeCheckbox = toolForm.addWidgetWithField(QCustomCheckBox("Generate Recipe:"), "generateRecipe")
+        toolForm.setValues({"generateRecipe": True})
+
+        isToolCheckBox.checkbox.toggled.connect(lambda: toolForm.setVisible(isToolCheckBox.checkbox.isChecked()))
 
         self.form.addSubmitButtonRow("Create Item")
 
@@ -103,9 +139,7 @@ class ItemCreatorWindow(CreationWindow):
         statusEffectPower.setValidator(statusEffectPowerValidator)
         statusEffectDuration = statusEffectForm.addRow("Duration (Ticks):", "duration")
         statusEffectDuration.setValidator(QIntValidator(0, 9999))
-        self.form.addValidator(statusEffectPowerValidator, statusEffectPower)
         
-
         statusEffectChance = statusEffectForm.addRow("Chance:", "statusEffectChance")
         statusEffectChanceValidator = QIntValidator(0, 100)
         statusEffectChance.setValidator(statusEffectChanceValidator)
@@ -149,6 +183,39 @@ class ItemCreatorWindow(CreationWindow):
                 selectionLayout.addWidget(checkbox, 10)
                 itemGroupChooserLayout.addRow(selectionLayout)
                 self.checkboxes[key] = checkbox
+    
+    def get_recipe_from_item(self, item):
+        repairItem = self.toolMaterials[item["toolProperties"]["toolMaterial"]]
+        with open(os.path.join(self.current_project, "properties.json"), "r") as f:
+            modID = json.loads(f.read())["mod_id"]
+
+        if repairItem in self.mod_items.keys():
+            repairName = self.mod_items[repairItem]
+        else:
+            with open(os.path.join(self.current_project, "blocks", repairItem.split(":")[1] + ".json"), "r") as f:
+                repairName = json.loads(f.read())["name"]
+
+        recipe = {
+            "name": f"{item['name']} from {repairName}",
+            "id": f"{item['id']}_from_{repairItem.split(':')[1]}",
+            "key": {"A": repairItem, "B": "minecraft:stick"},
+            "outputCount": 1,
+            "outputItem": modID + ":" + item["id"]
+        }
+
+        if item["toolProperties"]["toolType"] == "Pickaxe":
+            recipe["patterns"] = ["AAA", " B ", " B "]
+        elif item["toolProperties"]["toolType"] == "Axe":
+            recipe["patterns"] = ["AA", "AB", " B"]
+        elif item["toolProperties"]["toolType"] == "Sword":
+            recipe["patterns"] = ["A", "A", " B"]
+        elif item["toolProperties"]["toolType"] == "Shovel":
+            recipe["patterns"] = ["A", "B", " B"]
+        elif item["toolProperties"]["toolType"] == "Hoe":
+            recipe["patterns"] = ["AA", " B", " B"]
+
+        return recipe
+
 
     @staticmethod
     def get_item_groups(current_project):
@@ -158,3 +225,13 @@ class ItemCreatorWindow(CreationWindow):
                 with open(os.path.join(current_project, "item_groups", file)) as f:
                     item_groups[file] = json.loads(f.read())["name"]
         return item_groups
+
+    @staticmethod
+    def get_mod_items(current_project):
+        items = {}
+        if os.path.isdir(f"{current_project}/items"):
+            for file in os.listdir(f"{current_project}/items"):
+                with open(os.path.join(current_project, "items", file)) as f:
+                    content = json.loads(f.read())
+                    items[content["id"]] = content["name"]
+        return items

@@ -71,7 +71,7 @@ class QForm(QWidget):
 
     def setValues(self, values):
         for key, value in values.items():
-            if type(value) == str or type(value) == int:
+            if type(value) == str or type(value) == int or type(value) == bool:
                 self.fields[key].setText(value)
             else:
                 self.fields[key].setText(value(self))
@@ -241,6 +241,9 @@ class QCustomCheckBox(QWidget):
 
     def text(self):
         return self.checkbox.isChecked()
+
+    def setText(self, text):
+        self.checkbox.setChecked(text)
 
 
 class QCustomComboBox(QWidget):

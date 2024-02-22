@@ -1,0 +1,4 @@
+!IMPORTS!
+
+!CONTENT!
+%name%(%miningLevel%, %durability%, %miningSpeed%f, %attackSpeed%f, %enchantability%, () -> Ingredient.ofItems(%repairSpace%.%repairVar%));

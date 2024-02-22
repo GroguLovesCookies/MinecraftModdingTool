@@ -205,7 +205,7 @@ def initalize_project_editing_window():
         ("New Crafting\nRecipe", lambda: showWindow(create_new_recipe(menuWindow, CURRENT_PROJECT)), (1, 0, 1, 1)),
         ("New Smelting\nRecipe", lambda: showWindow(create_new_smelting(menuWindow, CURRENT_PROJECT)), (1, 1, 1, 1)),
         ("New Block\nSet", lambda: showWindow(create_new_block_set(menuWindow, CURRENT_PROJECT)), (1, 2, 1, 1)),
-        ("New Tool\nSet", lambda: True, (2, 0, 1, 1)),
+        ("New Tool\nMaterial", lambda: showWindow(create_new_tool_material(menuWindow, CURRENT_PROJECT)), (2, 0, 1, 1)),
         ("New Armor\nSet", lambda: True, (2, 1, 1, 1)),
         ("New Block\nSet", lambda: True, (2, 2, 1, 1)),
         ("New Tool\nSet", lambda: True, (3, 0, 1, 1)),
@@ -352,7 +352,7 @@ if __name__ == "__main__":
             # icon.mask = json.loads(f.read())["mask"]
         # icon.set_block("yellow_wool")
         # windowLayout.addWidget(icon)
-    
+
         for button in menu_buttons:
             button.setFixedHeight(600//len(menu_buttons) - 10)
             button.raise_()
