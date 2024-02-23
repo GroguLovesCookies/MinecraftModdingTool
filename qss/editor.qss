@@ -1,0 +1,9 @@
+QTextEdit {
+    background-color: #202020;
+    color: white;
+}
+
+QMenuBar {
+    background-color: #222;
+    color: white;
+}
