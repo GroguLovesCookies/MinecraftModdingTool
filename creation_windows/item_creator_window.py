@@ -50,6 +50,8 @@ class ItemCreatorWindow(CreationWindow):
                         recipe = self.get_recipe_from_item(values)
                         with open(os.path.join(self.current_project, "recipes", recipe["id"] + ".json"), "w") as f_recipe:
                             f_recipe.write(json.dumps(recipe))
+                if values["isCustom"]:
+                    data["customProperties"] = values["customProperties"]
                 f.write(json.dumps(data))
         
         for key, checkbox in self.checkboxes.items():
@@ -127,6 +129,18 @@ class ItemCreatorWindow(CreationWindow):
 
         isToolCheckBox.checkbox.toggled.connect(lambda: toolForm.setVisible(isToolCheckBox.checkbox.isChecked()))
 
+        isCustomCheckBox = self.form.addWidgetWithField(QCustomCheckBox("Is Custom Item:"), "isCustom")
+        customForm = self.form.addWidgetWithField(QForm(lambda x: x), "customProperties")
+        customForm.setVisible(False)
+        
+        customHeading = QLabel("Custom Properties")
+        customHeading.setObjectName("itemGroupChoiceHeading")
+        customForm.addWidgetWithoutField(customHeading)
+        
+        customFormList = customForm.addWidgetWithField(QFormList(self.generate_fields_form, "Add Field", "Remove Field"), "fields")
+
+        isCustomCheckBox.checkbox.toggled.connect(lambda: customForm.setVisible(isCustomCheckBox.checkbox.isChecked()))
+
         self.form.addSubmitButtonRow("Create Item")
 
         imagePickerWidget.getLineEdit().textChanged.connect(lambda: imagePickerWidget.setIcon(imagePickerWidget.text()))
@@ -147,6 +161,15 @@ class ItemCreatorWindow(CreationWindow):
         statusEffectForm.setValues({"statusEffectChance": "100"})
 
         return statusEffectForm
+
+    def generate_fields_form(self):
+        fieldForm = QForm(lambda x: x)
+        fieldForm.addRow("Field Name:", "fieldName")
+        fieldForm.addWidgetWithField(QCustomComboBox(
+            "Field Type:", 
+            ["Integer", "String", "Float", "Double", "Boolean"]
+        ), "fieldType").combobox.setEditable(True)
+        return fieldForm
     
     def initialize_layout(self):
         scrollArea = QScrollArea()

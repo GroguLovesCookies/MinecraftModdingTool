@@ -13,6 +13,7 @@ from creation_windows.recipe_creator_window import RecipeCreatorWindow
 from creation_windows.smelting_creator_window import SmeltingCreatorWindow
 from creation_windows.block_set_creator_window import BlockSetCreatorWindow
 from creation_windows.tool_material_creator_window import ToolMaterialCreatorWindow
+from creation_windows.custom_item_creator_window import CustomItemCreatorWindow
 
 
 def create_new_item_group(menuWindow, current_project, path=""):
@@ -78,3 +79,12 @@ def create_new_tool_material(menuWindow, current_project):
 
 def initialize_tool_material_creator_window(current_project):
     return ToolMaterialCreatorWindow("Create New Block Set", 1200, 800, 200, 200, current_project)
+
+
+def create_new_custom_item(menuWindow, current_project):
+    menuWindow.hide()
+    return initialize_custom_item_creator_window(current_project)
+
+
+def initialize_custom_item_creator_window(current_project):
+    return CustomItemCreatorWindow("Create New Custom Item", 1200, 800, 200, 200, current_project)

@@ -207,7 +207,7 @@ def initalize_project_editing_window():
         ("New Block\nSet", lambda: showWindow(create_new_block_set(menuWindow, CURRENT_PROJECT)), (1, 2, 1, 1)),
         ("New Tool\nMaterial", lambda: showWindow(create_new_tool_material(menuWindow, CURRENT_PROJECT)), (2, 0, 1, 1)),
         ("New Armor\nSet", lambda: True, (2, 1, 1, 1)),
-        ("New Block\nSet", lambda: True, (2, 2, 1, 1)),
+        ("New Custom\nItem", lambda: showWindow(create_new_custom_item(menuWindow, CURRENT_PROJECT)), (2, 2, 1, 1)),
         ("New Tool\nSet", lambda: True, (3, 0, 1, 1)),
         ("New Armor\nSet", lambda: True, (3, 1, 1, 1)),
         ("New Block\nSet", lambda: True, (3, 2, 1, 1)),

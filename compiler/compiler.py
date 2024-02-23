@@ -32,6 +32,8 @@ class Compiler:
         self.mod_items = []
         self.tool_materials = []
 
+        self.custom_items = []
+
     def compile(self):
         self.copy_files()
         self.initialize_mod_items_variable()
@@ -52,6 +54,7 @@ class Compiler:
         self.initialize_food_components()
         self.initialize_fuel_items()
         self.initialize_mod_client()
+        self.initialize_mod_custom_items()
         self.initialize_textures()
         self.initialize_translations()
 
@@ -109,7 +112,12 @@ class Compiler:
                         break
                 item_type = item["toolProperties"]["toolType"]
                 args_before = f"ModToolMaterial.{tool_material['id'].upper()}, {item['toolProperties']['attackDamage']}, {item['toolProperties']['attackSpeed']}f, "
-            else:
+            if "customProperties" in item.keys():
+                self.custom_items.append(item)
+                item_type = item["id"].split(":")[1].split("_")
+                item_type = "".join([x.title() for x in item_type])
+                args_before = ""
+            elif True not in [x in item.keys() for x in ["toolProperties", "customProperties"]]:
                 args_before = ""
                 item_type = ""
 
@@ -643,6 +651,10 @@ class Compiler:
             f.write(contents)
 
     
+    def initialize_mod_custom_items(self):
+        shutil.copytree(os.path.join(self.current_project, "custom_java"),  os.path.join(self.current_project, "compiled/src/main/java/", *self.domain.split("."), "item/custom"))
+
+    
     def initialize_tool_materials(self):
         for path in os.listdir(os.path.join(self.current_project, "tool_materials")):
             with open(os.path.join(self.current_project, "tool_materials", path), "r") as f:
@@ -752,6 +764,20 @@ class Compiler:
             add_item_text += f".add(ModBlocks.{block['id'].split(':')[1].upper()})\n"
         return add_item_text
 
+    @staticmethod
+    def replace_conditionals(text, key):
+        for key_target, key_value in key.items():
+            key_start = f"@{key_target}@"
+            key_end = f"@End{key_target}@"
+            if key_value:
+                text = Compiler.bulk_replace(text, {key_start: "", key_end: ""})
+            else:
+                start = text.find(key_start)
+                end = text.find(key_end)
+                text = text.replace(text[start:end+len(key_end)], "")
+        return text
+    
+
     def get_space_and_var_of_item(self, item, ignore_vanilla_blocks=False):
         if item.startswith("minecraft:"):
             if item.split(":")[1] in Compiler.vanilla_items or ignore_vanilla_blocks:
@@ -778,7 +804,8 @@ class Compiler:
         return combined_contents
 
 
-compiler = Compiler("cool_minecraft_mod")
-compiler.compile()
-compiler.redo_gradle()
-compiler.run_client()
+if __name__ == "__main__":
+    compiler = Compiler("cool_minecraft_mod")
+    compiler.compile()
+    compiler.redo_gradle()
+    compiler.run_client()
