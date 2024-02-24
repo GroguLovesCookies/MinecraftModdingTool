@@ -5,13 +5,15 @@ import re
 
 
 class CustomHighlighter(QSyntaxHighlighter):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, editor, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.editor = editor
 
 
     def highlightBlock(self, text):
         self.highlightTypes(text)
         self.highlightKeywords(text)
+        self.highlightBrackets(text)
         self.highlightStrings(text)
         self.highlightAnnotations(text)
         self.highlightNumericals(text)
@@ -52,6 +54,8 @@ class CustomHighlighter(QSyntaxHighlighter):
 
         locations = CustomHighlighter.getStringLocations(text)
         for loc in locations:
+            if len(loc) == 1:
+                continue
             self.setFormat(loc[0], loc[1]-loc[0], typeFormat)
 
     def highlightAnnotations(self, text):
@@ -91,8 +95,31 @@ class CustomHighlighter(QSyntaxHighlighter):
             length += match.end() - match.start()
             match = re.search(pattern, text[length:])
 
+    def highlightBrackets(self, text):
+        colors = [(107, 65, 148), (199, 192, 54), (141, 199, 154)]
+        matches = 0
+        incorrectFormat = QTextCharFormat()
+        incorrectFormat.setFontUnderline(True)
+        incorrectFormat.setUnderlineColor(QColor(255, 0, 0))
+        incorrectFormat.setUnderlineStyle(QTextCharFormat.UnderlineStyle.WaveUnderline)
 
-    
+        for i, char in enumerate(text):
+            if char == "(":
+                if matches < 0:
+                    continue
+
+                typeFormat = QTextCharFormat()
+                typeFormat.setForeground(QColor(*colors[matches % len(colors)]))
+                end = CustomHighlighter.find_matching_bracket(text, i)
+                if end == None:
+                    self.setFormat(i, 1, incorrectFormat)
+                    continue
+                self.setFormat(i, 1, typeFormat)
+                self.setFormat(end, 1, typeFormat)
+                matches += 1
+            elif char == ")":
+                matches -= 1
+
     @staticmethod
     def isValidMatch(match, length, text):
         return (match.start() + length == 0 or not text[match.start() + length - 1].isalnum()) \
@@ -115,3 +142,23 @@ class CustomHighlighter(QSyntaxHighlighter):
                     stringLocs[-1].append(i+1)
             i += 1
         return stringLocs
+
+    @staticmethod
+    def find_matching_bracket(text, index):
+        bracket_no = 1
+        change = 1
+        if text[index] == ")":
+            change = -1
+        
+        while index + change < len(text) and index + change >= 0 and bracket_no > 0:
+            index += change
+            char = text[index]
+            if char == "(":
+                bracket_no += 1
+            elif char == ")":
+                bracket_no -= 1
+
+        if bracket_no == 0:
+            return index
+        else:
+            return None
