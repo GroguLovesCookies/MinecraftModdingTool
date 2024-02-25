@@ -118,7 +118,7 @@ class EditorWindow(QMainWindow):
             elif added == "\n":
                 current_line_index = cursor.blockNumber()
                 lines = temp.split("\n")
-                tab_count = EditorWindow.getTabCount(lines[current_line_index], lines[current_line_index-1])
+                tab_count = self.getTabCount(lines[current_line_index], lines[current_line_index-1], cursor_pos)
                 self.editor.blockSignals(True)
                 self.editor.textCursor().insertText("\t"*tab_count)
                 self.editor.blockSignals(False)
@@ -146,8 +146,7 @@ class EditorWindow(QMainWindow):
 
         self.old_text = self.editor.toPlainText()
 
-    @staticmethod
-    def getTabCount(line, previous_line):
+    def getTabCount(self, line, previous_line, index):
         previous_line = previous_line.expandtabs(2)
         prev_line_tab_no = (len(previous_line) - len(previous_line.strip(" ")))//2
         if previous_line.endswith(";") or (previous_line.strip(" ").startswith("@") and EditorWindow.getBracketNoOfLine(previous_line) == 0) or previous_line.endswith("]") or previous_line.endswith("}") \
@@ -155,8 +154,41 @@ class EditorWindow(QMainWindow):
             if previous_line.endswith(";") and previous_line.strip(" ").startswith("."):
                 return prev_line_tab_no - 1
             return prev_line_tab_no
+        elif previous_line.endswith(")"):
+            raw_text = self.editor.toPlainText()
+            matched = EditorWindow.findBackwardsBracket(raw_text, index-2)
+
+            if matched is not None:
+                char = "("
+                isAnnotation = False
+                while char != "\n" and matched > 0:
+                    matched -= 1
+                    char = raw_text[matched]
+                    if char == "@":
+                        isAnnotation = True
+                        break
+
+                if isAnnotation:
+                    return prev_line_tab_no
+                else:
+                    return prev_line_tab_no + 1
         else:
             return prev_line_tab_no + 1
+
+    @staticmethod
+    def findBackwardsBracket(text, index):
+        bracket_no = 1
+        while index > 0 and bracket_no > 0:
+            index -= 1
+            char = text[index]
+            if char == "(":
+                bracket_no -= 1
+            elif char == ")":
+                bracket_no += 1
+
+        if bracket_no == 0:
+            return index
+        return None
 
     @staticmethod
     def getBracketNoOfLine(line, start="(", end=")"):
