@@ -91,7 +91,7 @@ class CustomHighlighter:
         typeFormat.setFontWeight(QFont.Bold)
         typeFormat.setForeground(QColor(30, 104, 179))
 
-        pattern = "public|private|protected|package|class|new|imports|true|false|this|import|if|else|continue|break|for|while"
+        pattern = "public|private|protected|package|class|new|imports|true|false|this|import|if|else|continue|break|for|while|null"
         match = re.search(pattern, text)
         length = 0
         while match is not None and match.start() >= 0:

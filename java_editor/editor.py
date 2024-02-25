@@ -132,6 +132,20 @@ class EditorWindow(QMainWindow):
                         temp_cursor.movePosition(QTextCursor.EndOfLine)
                         self.editor.setTextCursor(temp_cursor)
                         self.editor.blockSignals(False)
+                    else:
+                        matching_index = EditorWindow.findBackwardsBracket(temp, cursor_pos, reverse_brackets[temp[cursor_pos]], temp[cursor_pos])
+                        if matching_index is not None:
+                            text = temp[matching_index:cursor_pos-1]
+                            if "\n" not in text:
+                                self.editor.blockSignals(True)
+                                self.editor.textCursor().deletePreviousChar()
+                                cursor = self.editor.textCursor()
+                                cursor.setPosition(matching_index+1)
+                                cursor.insertText("\n")
+                                cursor.insertText("\t"*(tab_count))
+                                cursor.movePosition(cursor.EndOfLine)
+                                self.editor.setTextCursor(cursor)
+                                self.editor.blockSignals(False)
         elif len(self.old_text) == len(self.editor.toPlainText()) + 1:
             removed = self.old_text[cursor_pos]
             if removed in brackets.keys():
@@ -176,14 +190,14 @@ class EditorWindow(QMainWindow):
             return prev_line_tab_no + 1
 
     @staticmethod
-    def findBackwardsBracket(text, index):
+    def findBackwardsBracket(text, index, start="(", end=")"):
         bracket_no = 1
         while index > 0 and bracket_no > 0:
             index -= 1
             char = text[index]
-            if char == "(":
+            if char == start:
                 bracket_no -= 1
-            elif char == ")":
+            elif char == end:
                 bracket_no += 1
 
         if bracket_no == 0:
