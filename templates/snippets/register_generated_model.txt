@@ -3,4 +3,4 @@ import %domain%.item.ModItems;
 import net.minecraft.data.client.Models;
 
 !CONTENT!
-        itemModelGenerator.register(ModItems.%itemVar%, Models.GENERATED);
+        itemModelGenerator.register(ModItems.%itemVar%, Models.%modelType%);

@@ -43,11 +43,11 @@ class CustomHighlighter:
         text, self.offset = self.get_total_line(diff_on)
         self.highlightTypes(text)
         self.highlightKeywords(text)
-        self.highlightStrings(text)
         self.highlightAnnotations(text)
         self.highlightNumericals(text)
         self.highlightComments(text)
         self.highlightBrackets()
+        self.highlightStrings(text)
         self.document.blockSignals(False)
 
     def get_total_line(self, diff_on):
@@ -132,7 +132,8 @@ class CustomHighlighter:
         match = re.search(pattern, text)
         length = 0
         while match is not None and match.start() >= 0:
-            if True in [str(i) in text[match.start() + length:match.end() + length] for i in range(10)]:
+            if True in [str(i) in text[match.start() + length:match.end() + length] for i in range(10)] and \
+                CustomHighlighter.isValidMatch(match, length, text):
                 self.highlightText(match.start() + length, match.end()-match.start(), typeFormat)
             length += match.end() - match.start()
             match = re.search(pattern, text[length:])

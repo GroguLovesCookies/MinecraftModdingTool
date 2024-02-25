@@ -292,7 +292,10 @@ class Compiler:
         combined_contents = ""
         for item in self.items:
             content_copy = content[:]
-            content_copy = Compiler.bulk_replace(content_copy, {f"%itemVar%": item["id"].split(":")[1].upper()})
+            if "toolProperties" in item.keys():
+                content_copy = Compiler.bulk_replace(content_copy, {f"%itemVar%": item["id"].split(":")[1].upper(), f"%modelType%": "HANDHELD"})
+            else:
+                content_copy = Compiler.bulk_replace(content_copy, {f"%itemVar%": item["id"].split(":")[1].upper(), f"%modelType%": "GENERATED"})
             combined_contents += content_copy + "\n"
 
         imports2, contents2 = Compiler.parse_template("templates/snippets/register_block_cube_all_model.txt")
