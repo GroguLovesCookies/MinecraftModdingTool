@@ -13,9 +13,9 @@ class CustomHighlighter:
         self.current_cursor_pos = self.document.textCursor().position()
 
     def highlightText(self, start, length, format, add_offset=True):
-        self.document.blockSignals(True)
 
         scroll_pos = self.document.verticalScrollBar().value()
+        horizontal_scroll_pos = self.document.horizontalScrollBar().value()
 
         cursor = self.document.textCursor()
         cursor_pos = cursor.position()
@@ -34,10 +34,11 @@ class CustomHighlighter:
         self.document.setCurrentCharFormat(self.basicFormat)
 
         self.document.verticalScrollBar().setValue(scroll_pos)
+        self.document.horizontalScrollBar().setValue(horizontal_scroll_pos)
 
-        self.document.blockSignals(False)
 
     def highlight(self, diff_on=False):
+        self.document.blockSignals(True)
         self.document.setCurrentCharFormat(self.basicFormat)
         text, self.offset = self.get_total_line(diff_on)
         self.highlightTypes(text)
@@ -47,6 +48,7 @@ class CustomHighlighter:
         self.highlightNumericals(text)
         self.highlightComments(text)
         self.highlightBrackets()
+        self.document.blockSignals(False)
 
     def get_total_line(self, diff_on):
         new_line_count = self.document.document().blockCount()
