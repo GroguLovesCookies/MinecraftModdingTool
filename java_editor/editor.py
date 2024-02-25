@@ -4,7 +4,7 @@ from PyQt5.Qsci import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import sys, os
-from syntax_highlighter import CustomHighlighter
+from  custom_highlighter import CustomHighlighter
 
 
 class EditorWindow(QMainWindow):
@@ -71,14 +71,15 @@ class EditorWindow(QMainWindow):
         body_frame.setLayout(self.body)
 
         self.editor = QTextEdit()
-        self.highlighter = CustomHighlighter(self.editor, self.editor.document())
+        self.editor.textChanged.connect(self.check)
+        self.highlighter = CustomHighlighter(self.editor)
+
         self.editor.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.editor.setLineWrapMode(QTextEdit.NoWrap)
         self.editor.setTabStopDistance(QFontMetricsF(self.editor.font()).horizontalAdvance(' ') * 16)
         self.editor.setFont(self.font)
         self.body.addWidget(self.editor)
         self.setCentralWidget(body_frame)
-        self.editor.textChanged.connect(self.check)
 
     def open_file(self, path):
         self.editor.setText(open(path, "r").read())
@@ -103,30 +104,29 @@ class EditorWindow(QMainWindow):
         cursor_pos = cursor.position()
         changed = False
         if len(self.old_text) == len(self.editor.toPlainText()) - 1:
-            changed = True
             added = temp[cursor_pos-1]
             if added in brackets.keys():
                 if cursor_pos == len(temp) or not temp[cursor_pos].isalnum():
-                    listed = list(temp)
-                    listed.insert(cursor_pos, brackets[added])
-                    temp = "".join(listed)
+                    self.editor.blockSignals(True)
+                    scroll_pos = self.editor.verticalScrollBar().value()
+                    self.editor.textCursor().insertText(brackets[added])
+                    self.editor.verticalScrollBar().setValue(scroll_pos)
+                    cursor.setPosition(cursor_pos)
+                    self.editor.setTextCursor(cursor)
+                    self.editor.blockSignals(False)
         elif len(self.old_text) == len(self.editor.toPlainText()) + 1:
-            changed = True
             removed = self.old_text[cursor_pos]
             if removed in brackets.keys():
                 if temp[cursor_pos] == brackets[removed]:
-                    listed = list(temp)
-                    listed.pop(cursor_pos)
-                    temp = "".join(listed)
+                    self.editor.blockSignals(True)
+                    scroll_pos = self.editor.verticalScrollBar().value()
+                    self.editor.textCursor().deleteChar()
+                    self.editor.verticalScrollBar().setValue(scroll_pos)
+                    cursor.setPosition(cursor_pos)
+                    self.editor.setTextCursor(cursor)
+                    self.editor.blockSignals(False)
 
-        if changed:
-            self.old_text = ""
-            scroll_pos = self.editor.verticalScrollBar().value()
-            self.editor.setText(temp)
-            self.editor.verticalScrollBar().setValue(scroll_pos)
-            cursor.setPosition(cursor_pos)
-            self.editor.setTextCursor(cursor)
-        self.old_text = temp    
+        self.old_text = self.editor.toPlainText()
 
 
 
