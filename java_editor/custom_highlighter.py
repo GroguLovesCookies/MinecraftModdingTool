@@ -51,7 +51,6 @@ class CustomHighlighter:
     def get_total_line(self, diff_on):
         new_line_count = self.document.document().blockCount()
         new_cursor_pos = self.document.textCursor().position()
-        print(new_cursor_pos, self.current_cursor_pos)
         added_lines = new_line_count - self.current_line_count
         diff = self.current_cursor_pos - new_cursor_pos
         self.current_cursor_pos = new_cursor_pos

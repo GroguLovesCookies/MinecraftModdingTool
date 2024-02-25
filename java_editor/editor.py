@@ -76,7 +76,7 @@ class EditorWindow(QMainWindow):
 
         self.editor.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.editor.setLineWrapMode(QTextEdit.NoWrap)
-        self.editor.setTabStopDistance(QFontMetricsF(self.editor.font()).horizontalAdvance(' ') * 16)
+        self.editor.setTabStopDistance(QFontMetricsF(self.editor.font()).horizontalAdvance(' ') * 8)
         self.editor.setFont(self.font)
         self.body.addWidget(self.editor)
         self.setCentralWidget(body_frame)
@@ -99,6 +99,7 @@ class EditorWindow(QMainWindow):
 
     def check_brackets(self):
         brackets = {"(": ")", "[": "]", "{": "}", "\"": "\"", "'": "'"}
+        reverse_brackets = {")": "(", "]": "[", "}": "{"}
         temp = self.editor.toPlainText()
         cursor: QTextCursor = self.editor.textCursor()
         cursor_pos = cursor.position()
@@ -114,10 +115,27 @@ class EditorWindow(QMainWindow):
                     cursor.setPosition(cursor_pos)
                     self.editor.setTextCursor(cursor)
                     self.editor.blockSignals(False)
+            elif added == "\n":
+                current_line_index = cursor.blockNumber()
+                lines = temp.split("\n")
+                tab_count = EditorWindow.getTabCount(lines[current_line_index], lines[current_line_index-1])
+                self.editor.blockSignals(True)
+                self.editor.textCursor().insertText("\t"*tab_count)
+                self.editor.blockSignals(False)
+                if cursor_pos < len(temp) and temp[cursor_pos] in reverse_brackets.keys():
+                    if cursor_pos > 1 and temp[cursor_pos-2] == reverse_brackets[temp[cursor_pos]]:
+                        self.editor.blockSignals(True)
+                        self.editor.textCursor().insertText("\n")
+                        self.editor.textCursor().insertText("\t"*max(tab_count-1, 0))
+                        temp_cursor = self.editor.textCursor()
+                        temp_cursor.movePosition(QTextCursor.Up)
+                        temp_cursor.movePosition(QTextCursor.EndOfLine)
+                        self.editor.setTextCursor(temp_cursor)
+                        self.editor.blockSignals(False)
         elif len(self.old_text) == len(self.editor.toPlainText()) + 1:
             removed = self.old_text[cursor_pos]
             if removed in brackets.keys():
-                if temp[cursor_pos] == brackets[removed]:
+                if cursor_pos < len(temp) and temp[cursor_pos] == brackets[removed]:
                     self.editor.blockSignals(True)
                     scroll_pos = self.editor.verticalScrollBar().value()
                     self.editor.textCursor().deleteChar()
@@ -127,6 +145,28 @@ class EditorWindow(QMainWindow):
                     self.editor.blockSignals(False)
 
         self.old_text = self.editor.toPlainText()
+
+    @staticmethod
+    def getTabCount(line, previous_line):
+        previous_line = previous_line.expandtabs(2)
+        prev_line_tab_no = (len(previous_line) - len(previous_line.strip(" ")))//2
+        if previous_line.endswith(";") or (previous_line.strip(" ").startswith("@") and EditorWindow.getBracketNoOfLine(previous_line) == 0) or previous_line.endswith("]") or previous_line.endswith("}") \
+            or previous_line.endswith(",") or previous_line.strip(" ").startswith("."):
+            if previous_line.endswith(";") and previous_line.strip(" ").startswith("."):
+                return prev_line_tab_no - 1
+            return prev_line_tab_no
+        else:
+            return prev_line_tab_no + 1
+
+    @staticmethod
+    def getBracketNoOfLine(line, start="(", end=")"):
+        bracket_no = 0
+        for char in line:
+            if char == start:
+                bracket_no += 1
+            elif char == end:
+                bracket_no -= 1
+        return bracket_no
 
 
 
