@@ -40,13 +40,22 @@ class CustomHighlighter:
     def highlight(self, diff_on=False):
         self.document.blockSignals(True)
         self.document.setCurrentCharFormat(self.basicFormat)
-        text, self.offset = self.get_total_line(diff_on)
+        text, self.offset, added = self.get_total_line(diff_on)
+        cursor = self.document.textCursor()
+        cursor_pos = cursor.position()
+        cursor.setPosition(self.offset)
+        cursor.movePosition(QTextCursor.Down, QTextCursor.KeepAnchor, added)
+        cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+        self.document.setTextCursor(cursor)
+        self.document.setCurrentCharFormat(self.basicFormat)
+        cursor.setPosition(cursor_pos)
+        self.document.setTextCursor(cursor)
         self.highlightTypes(text)
         self.highlightKeywords(text)
         self.highlightAnnotations(text)
         self.highlightNumericals(text)
-        self.highlightComments(text)
         self.highlightBrackets()
+        self.highlightComments(text)
         self.highlightStrings(text)
         self.document.blockSignals(False)
 
@@ -70,9 +79,9 @@ class CustomHighlighter:
             text = split[line-added_lines:line+1]
         text = "\n".join(text)
         if line == 0:
-            return text, len(text_before)
+            return text, len(text_before), added_lines
         else:
-            return text, len(text_before) + 1
+            return text, len(text_before) + 1, added_lines
 
     def highlightTypes(self, text):
         typeFormat = QTextCharFormat()

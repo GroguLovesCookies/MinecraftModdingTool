@@ -80,10 +80,16 @@ class EditorWindow(QMainWindow):
         self.editor.setFont(self.font)
         self.body.addWidget(self.editor)
         self.setCentralWidget(body_frame)
+        self.editor.cursorPositionChanged.connect(self.reset_char_format)
 
     def open_file(self, path):
         self.editor.setText(open(path, "r").read())
         self.current_file = path
+
+    def reset_char_format(self):
+        self.editor.blockSignals(True)
+        self.editor.setCurrentCharFormat(self.highlighter.basicFormat)
+        self.editor.blockSignals(False)
 
     def open_file_menu(self):
         path = QFileDialog.getOpenFileName(self, "Open File", os.getcwd())
