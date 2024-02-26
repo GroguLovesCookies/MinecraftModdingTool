@@ -64,7 +64,6 @@ def open_project():
         return
     with open(f"{chosenPath}/properties.json") as f:
         properties = json.loads(f.read())
-        print(properties)
         if "verification_id" not in properties.keys():
             return
         if not validate_id(properties["verification_id"]):

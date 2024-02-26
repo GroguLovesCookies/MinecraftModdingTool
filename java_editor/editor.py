@@ -88,7 +88,8 @@ class EditorWindow(QMainWindow):
 
     def reset_char_format(self):
         self.editor.blockSignals(True)
-        self.editor.setCurrentCharFormat(self.highlighter.basicFormat)
+        if self.editor.textCursor().selectionStart() == self.editor.textCursor().selectionEnd():
+            self.editor.setCurrentCharFormat(self.highlighter.basicFormat)
         self.editor.blockSignals(False)
 
     def open_file_menu(self):
