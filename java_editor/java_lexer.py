@@ -14,6 +14,7 @@ class Lexer:
     TYPE_KW = "KEYWORD"
     TYPE_FUNC = "FUNC"
     TYPE_DUMMY = "DUMMY"
+    TYPE_COMMA = "COMMA"
 
     VALUE_PLUS = "PLUS"
     VALUE_MINUS = "MINUS"
@@ -37,6 +38,7 @@ class Lexer:
     VALUE_CURLY_BRACKET = "CURL"
     VALUE_ACCESS = "ACC"
     VALUE_EOS = "EOS"
+    VALUE_COMMA = "COMMA"
 
     PSEUDOTYPE_ASSIGN = "ASSIGN"
     PSEUDOTYPE_REFERENCE = "REFERENCE"
@@ -66,8 +68,9 @@ class Lexer:
     ]
 
     ASSIGNMENT_REGEX = JavaRegex.fromString("VALUE,\s,0,1>VALUE,\i,0,1000000000>VALUE,\t,1,1|TYPE,VAR,0,1|1|1>TYPE,VAR,1,1>TYPE,EOS/ASSIGNMENT,1,1")
-    CLASS_CREATION_REGEX = JavaRegex.fromString("VALUE,\s,0,1>VALUE,class/enum/interface,1,1>TYPE,VAR,1,1>VALUE,extends,0,1>TYPE,VAR,0,1>VALUE,implements,0,1>TYPE,VAR,0,1>VALUE,{,1,1")
-    FUNCTION_CREATION_REGEX = JavaRegex.fromString("VALUE,\s,0,1>VALUE,\i/abstract,0,100000000000>VALUE,\t/void,1,1>TYPE,VAR,1,1>VALUE,(,1,1")
+    CLASS_CREATION_REGEX = JavaRegex.fromString("VALUE,\s,0,1>VALUE,abstract,0,1>VALUE,class/enum/interface,1,1>TYPE,VAR,1,1>VALUE,extends,0,1>TYPE,VAR,0,1>VALUE,implements,0,1>TYPE,VAR,0,1>VALUE,{,1,1")
+    FUNCTION_CREATION_REGEX = JavaRegex.fromString("VALUE,\s,0,1>VALUE,\i/abstract,0,100000000000>VALUE,\t/void,1,1|TYPE,VAR,1,1|1|1>TYPE,VAR,1,1>VALUE,(,1,1")
+    PACKAGE_REGEX = JavaRegex.fromString("VALUE,package,1,1")
     def __init__(self, document):
         self.document = document
 
@@ -148,7 +151,7 @@ class Lexer:
                 op_text = ""
                 continue
 
-            while char.isnumeric() or char == "." or (char == "f" and num_text != ""):
+            while char.isnumeric() or (char == "." and (i == len(text) - 1 or text[i+1].isnumeric() or i == 0 or text[i-1].isnumeric())) or (char == "f" and num_text != ""):
                 num_text += char
                 i += 1
                 if char == ".":
@@ -180,16 +183,18 @@ class Lexer:
             if char in ["(", ")", "[", "]", "{", "}"]:
                 tokens.append(Token(Lexer.TYPE_BRACKET, char))
 
-            if char == ";":
+            elif char == ";":
                 tokens.append(Token(Lexer.VALUE_EOS, Lexer.VALUE_EOS))
 
-            if char == "\"" or char == "\'":
+            elif char == "\"" or char == "\'":
                 in_string = char
             
-            if char == ".":
-                tokens.append(Token(Lexer.TYPE_OPERATOR, Lexer.VALUE_ACCESS))
-            if char == "~":
+            elif char == ".":
+                tokens.append(Token(Lexer.TYPE_OPERATOR, "."))
+            elif char == "~":
                 tokens.append(Token(Lexer.TYPE_DUMMY, Lexer.TYPE_DUMMY))
+            elif char == ",":
+                tokens.append(Token(Lexer.TYPE_COMMA, Lexer.VALUE_COMMA))
             
             while i < len(text) and (char.isalnum() or char == "_"):
                 cur_var += char
@@ -211,6 +216,21 @@ class Lexer:
                     tokens.append(Token(Lexer.TYPE_VAR, cur_var))
         return tokens
 
+    @staticmethod
+    def get_closing_bracket(tokens, i, start="(", end=")"):
+        bracket_no = 1
+        while bracket_no > 0 and i < len(tokens)-1:
+            i += 1
+            token = tokens[i]
+            if token.value == start:
+                bracket_no += 1
+            elif token.value == end:
+                bracket_no -= 1
+        
+        if bracket_no == 0:
+            return i
+        return None
+
 
 if __name__ == "__main__":
     lexer = Lexer(None)
@@ -218,5 +238,5 @@ if __name__ == "__main__":
         for line in f.readlines():
             line = line.expandtabs(4).strip()
             tokens = lexer.get_tokens(line)
-            if Lexer.CLASS_CREATION_REGEX.is_match(tokens):
+            if Lexer.FUNCTION_CREATION_REGEX.is_match(tokens):
                 print(line)

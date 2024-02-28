@@ -70,8 +70,6 @@ class JavaRegex:
                 validation = quantifier.validate(j)
         return True
 
-            
-
 
 class JavaPattern:
     def __init__(self, pattern_type, values, negative_values):
@@ -96,6 +94,26 @@ class JavaPattern:
             return (token.value in self.values or len(self.values) == 0) and token.value not in self.negative_values
         elif self.type == "PSTYPE":
             return (token.pseudotype in self.values or len(self.values) == 0) and token.pseudotype not in self.negative_values
+
+    def split(self, tokens):
+        splits = []
+        cur_split = []
+        for token in tokens:
+            if self.matches(token):
+                splits.append(cur_split[:])
+                cur_split = []
+            else:
+                cur_split.append(token)
+        if len(cur_split) > 0:
+            splits.append(cur_split)
+        return splits
+
+    def count(self, tokens):
+        count = 0
+        for token in tokens:
+            if self.matches(token):
+                count += 1
+        return count
 
 
 class JavaQuantifier:
