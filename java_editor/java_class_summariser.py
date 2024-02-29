@@ -1,6 +1,7 @@
 from java_lexer import Lexer
 from java_regex import JavaRegex, JavaPattern
 from java_token import Token
+import json
 
 
 class ClassSummariser:
@@ -37,8 +38,25 @@ class ClassSummariser:
         self.variables = {}
         self.functions = {}
 
+        self.members = {
+            "public": {
+                "vars": {},
+                "funcs": {}
+            },
+            "private": {
+                "vars": {},
+                "funcs": {}
+            },
+            "protected": {
+                "vars": {},
+                "funcs": {}
+            }
+        }
+
         self.get_class_details()
         self.get_class_members()
+
+        self.organise_members()
     
     def initialize_lists(self):
         for line in self.class_lines:
@@ -86,6 +104,13 @@ class ClassSummariser:
             brace_no += ClassSummariser.OPEN_BRACE_PATTERN.count(line)
             brace_no -= ClassSummariser.CLOSE_BRACE_PATTERN.count(line)
 
+    def organise_members(self):
+        for name, variable in self.variables.items():
+            self.members[variable["scope"]]["vars"][name] = variable
+        for name, function in self.functions.items():
+            self.members[function["scope"]]["funcs"][name] = function
+        
+
     @staticmethod
     def parse_variable_creation_line(tokens):
         scope = "private"
@@ -121,7 +146,7 @@ class ClassSummariser:
         static = False
         final = False
         abstract = False
-        arg_types = []
+        arg_types = {}
 
         i = 0
 
@@ -146,9 +171,23 @@ class ClassSummariser:
         
         closing_index = Lexer.get_closing_bracket(tokens, i)
         for type_token, name_token in ClassSummariser.COMMA_PATTERN.split(tokens[i+1:closing_index]):
-            arg_types.append(type_token)
+            arg_types[name_token.value] = type_token.value
         
         return name, rtype, scope, final, static, abstract, arg_types
+
+    def save(self, output):
+        with open(output, "w") as f:
+            f.write(json.dumps({
+                "package": self.package,
+                "class_properties": {
+                    "name": self.name,
+                    "abstract": self.abstract,
+                    "parent": self.extends,
+                    "implemented": self.implements,
+                    "class_type": self.class_type
+                },
+                "members": self.members
+            }))
 
     @staticmethod
     def parse_class_creation_line(tokens):
@@ -189,6 +228,4 @@ class ClassSummariser:
 
 if __name__ == "__main__":
     summariser = ClassSummariser("cool_minecraft_mod/custom_java/MetalDetectorItem.java", "MetalDetectorItem")
-    print(summariser.package)
-    print(summariser.privacy, summariser.class_type, summariser.name, summariser.extends, summariser.implements, summariser.abstract)
-    print(summariser.variables)
+    summariser.save("class_info/metal_detector_item.json")
