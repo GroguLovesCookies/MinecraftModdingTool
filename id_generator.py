@@ -40,6 +40,3 @@ def validate_id(identification):
     except ValueError:
         return False
     return abs(int(result) - result) < 0.001
-
-id = generate_random_id()
-print(validate_id(id))

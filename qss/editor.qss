@@ -7,3 +7,15 @@ QMenuBar {
     background-color: #222;
     color: white;
 }
+
+#suggestionBox {
+    background-color: #333;
+    padding: 0px;
+}
+
+QLabel {
+    font: Consolas;
+    color: white;
+    padding: 0px;
+    margin: 0px;
+}

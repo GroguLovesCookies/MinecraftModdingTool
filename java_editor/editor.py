@@ -1,6 +1,5 @@
 from PyQt5.Qt import *
 from PyQt5.QtWidgets import *
-from PyQt5.Qsci import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import sys, os
@@ -10,6 +9,11 @@ from  custom_highlighter import CustomHighlighter
 class EditorWindow(QMainWindow):
     def __init__(self):
         super(QMainWindow, self).__init__()
+        self.box_max_height = 400
+        self.box_width = 800
+        self.suggestion_shown = True
+        self.selected_index = 0
+        self.suggestion_height = 22
         self.init_ui()
 
         self.current_file = ""
@@ -30,8 +34,101 @@ class EditorWindow(QMainWindow):
         self.setup_menu()
 
         self.old_text = ""
+        self.box = QScrollArea(self)
+        self.box.setFixedWidth(self.box_width)
+        self.box.setMaximumHeight(self.box_max_height)
+
+        self.box.setWidgetResizable(True)
+
+        self.box_contents = QWidget(self)
+        self.box_layout = QVBoxLayout()
+        self.box_contents.setLayout(self.box_layout)
+        self.box_contents.setObjectName("suggestionBox")
+        self.box_layout.setSpacing(0)
+        self.box_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.box.setWidget(self.box_contents)
+        self.editor.installEventFilter(self)
+
+        self.editor.cursorPositionChanged.connect(self.cursor_changed)
+        self.editor.verticalScrollBar().valueChanged.connect(self.cursor_changed)
+
+        self.set_suggestions([str(i) for i in range(100)])
 
         self.showMaximized()
+
+    def eventFilter(self, widget, event):
+        if event.type() != QEvent.KeyPress or not self.suggestion_shown:
+            return False
+        if event.key() == Qt.Key_Escape:
+            self.editor.setFocus()
+            self.suggestion_shown = False
+            self.cursor_changed()
+            return False
+        elif event.key() == Qt.Key_Down:
+            if self.selected_index < self.box_layout.count() - 1:
+                self.selected_index += 1
+                self.box_layout.itemAt(self.selected_index - 1).widget().setStyleSheet("background-color: transparent;")
+                self.box_layout.itemAt(self.selected_index).widget().setStyleSheet("background-color: blue;")
+            else:
+                self.selected_index = 0
+                self.box_layout.itemAt(self.box_layout.count() - 1).widget().setStyleSheet("background-color: transparent;")
+                self.box_layout.itemAt(self.selected_index).widget().setStyleSheet("background-color: blue;")
+            scroll_bar = self.box.verticalScrollBar()
+            current_position = self.suggestion_height * self.selected_index
+            if current_position > scroll_bar.value() + self.box.sizeHint().height() or current_position < scroll_bar.value():
+                scroll_bar.setValue(current_position)
+            return True
+        elif event.key() == Qt.Key_Up :
+            if self.selected_index > 0:
+                self.selected_index -= 1
+                self.box_layout.itemAt(self.selected_index + 1).widget().setStyleSheet("background-color: transparent;")
+                self.box_layout.itemAt(self.selected_index).widget().setStyleSheet("background-color: blue;")
+            else:
+                self.selected_index = self.box_layout.count() - 1
+                self.box_layout.itemAt(0).widget().setStyleSheet("background-color: transparent;")
+                self.box_layout.itemAt(self.selected_index).widget().setStyleSheet("background-color: blue;")
+            scroll_bar = self.box.verticalScrollBar()
+            current_position = self.suggestion_height * self.selected_index
+            if current_position > scroll_bar.value() + self.box.sizeHint().height() or current_position < scroll_bar.value():
+                scroll_bar.setValue(current_position)
+            return True
+        elif event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
+            self.insert_text(self.box_layout.itemAt(self.selected_index).widget().text())
+            return True
+        
+        return QWidget.eventFilter(self, widget, event)
+
+    def insert_text(self, text, replace=False):
+        if not replace:
+            self.suggestion_shown = False
+            self.cursor_changed()
+            self.editor.textCursor().insertText(text)
+
+    def cursor_changed(self):
+        if self.suggestion_shown:
+            self.box.show()
+        else:
+            self.box.hide()
+            return
+        self.cursorRect = self.editor.cursorRect()
+        menu_height = self.menuBar().rect().height()
+        line_height = QFontMetrics(self.font).height()
+        self.box.move(max(self.cursorRect.x() - self.box_width, 4), self.cursorRect.y() + menu_height + line_height + 2)
+
+    def set_suggestions(self, suggestions):
+        for i in reversed(range(self.box_layout.count())):
+            widget = self.box_layout.itemAt(i).widget()
+            self.box_layout.removeWidget(widget)
+        for i, suggestion in enumerate(suggestions):
+            label = QLabel(suggestion)
+            if i == 0:
+                label.setStyleSheet("background-color: blue")
+            label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            label.setFont(self.font)
+            self.box_layout.addWidget(label)
+        self.box.setFixedSize(self.box_width, min(self.box_max_height, self.box_contents.sizeHint().height() + 2))
+        self.box.setFocusPolicy(Qt.NoFocus)
 
     def setup_menu(self):
         menu_bar = self.menuBar()
