@@ -3,6 +3,21 @@ import re
 
 
 class CustomHighlighter:
+    STANDARD_KEYWORDS = [
+        "abstract", "assert", "class", "enum", "extends", "final", "implements", "import", "instanceof"
+        "interface", "native", "new", "package", "private", "protected", "public", "static", "super", 
+        "synchronized", "this", "throws", "transient", "volatile", "true", "false", "null"
+    ]
+
+    FLOW_KEYWORDS = [
+        "break", "catch", "catch", "continue", "default", "do", "else", 
+        "finally", "for", "if", "return", "switch", "throw", "try", "while"
+    ]
+
+    TYPE_KEYWORDS = [
+        "boolean", "byte", "char", "double", "float", "int", "long", "short"
+    ]
+
     def __init__(self, document):
         self.document = document
         self.basicFormat = self.document.currentCharFormat()
@@ -50,7 +65,6 @@ class CustomHighlighter:
         self.document.setCurrentCharFormat(self.basicFormat)
         cursor.setPosition(cursor_pos)
         self.document.setTextCursor(cursor)
-        self.highlightTypes(text)
         self.highlightKeywords(text)
         self.highlightAnnotations(text)
         self.highlightNumericals(text)
@@ -83,33 +97,25 @@ class CustomHighlighter:
         else:
             return text, len(text_before) + 1, added_lines
 
-    def highlightTypes(self, text):
-        typeFormat = QTextCharFormat()
-        typeFormat.setFontWeight(QFont.Bold)
-        typeFormat.setForeground(QColor(219, 159, 103))
-
-        pattern = "int|boolean|float|double|void"
-        match = re.search(pattern, text)
-        length = 0
-        while match is not None and match.start() >= 0:
-            if CustomHighlighter.isValidMatch(match, length, text):
-                self.highlightText(match.start() + length, match.end()-match.start(), typeFormat)
-            length += match.end() - match.start()
-            match = re.search(pattern, text[length:])
-
     def highlightKeywords(self, text):
-        typeFormat = QTextCharFormat()
-        typeFormat.setFontWeight(QFont.Bold)
-        typeFormat.setForeground(QColor(30, 104, 179))
 
-        pattern = "public|private|protected|package|class|new|imports|true|false|this|import|if|else|continue|break|for|while|null"
-        match = re.search(pattern, text)
-        length = 0
-        while match is not None and match.start() >= 0:
-            if CustomHighlighter.isValidMatch(match, length, text):
-                self.highlightText(match.start() + length, match.end()-match.start(), typeFormat)
-            length += match.end() - match.start()
-            match = re.search(pattern, text[length:])
+        pattern_dict = {
+            "|".join(CustomHighlighter.STANDARD_KEYWORDS): QColor(30, 104, 179),
+            "|".join(CustomHighlighter.FLOW_KEYWORDS): QColor(133, 105, 179),
+            "|".join(CustomHighlighter.TYPE_KEYWORDS): QColor(219, 159, 103)
+        }
+
+        for pattern, color in pattern_dict.items():
+            typeFormat = QTextCharFormat()
+            typeFormat.setFontWeight(QFont.Bold)
+            typeFormat.setForeground(color)
+            match = re.search(pattern, text)
+            length = 0
+            while match is not None and match.start() >= 0:
+                if CustomHighlighter.isValidMatch(match, length, text):
+                    self.highlightText(match.start() + length, match.end()-match.start(), typeFormat)
+                length += match.end() - match.start()
+                match = re.search(pattern, text[length:])
 
     def highlightStrings(self, text):
         typeFormat = QTextCharFormat()

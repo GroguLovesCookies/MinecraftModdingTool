@@ -5,8 +5,12 @@ from PyQt5.QtCore import *
 import sys, os
 from  custom_highlighter import CustomHighlighter
 
+from java_lexer import Lexer
+
 
 class EditorWindow(QMainWindow):
+    DEFAULT_SUGGESTIONS = [*Lexer.KEYWORDS]
+
     def __init__(self):
         super(QMainWindow, self).__init__()
         self.box_max_height = 400
@@ -14,6 +18,7 @@ class EditorWindow(QMainWindow):
         self.suggestion_shown = True
         self.selected_index = 0
         self.suggestion_height = 22
+        self.inserted = False
         self.init_ui()
 
         self.current_file = ""
@@ -57,6 +62,24 @@ class EditorWindow(QMainWindow):
 
         self.showMaximized()
 
+    def get_symbol_at_cursor(self, include_whole=False):
+        chars = []
+        i = self.editor.textCursor().position() - 1
+        text = self.editor.toPlainText()
+        while i >= 0 and (text[i].isalnum() or text[i] == "_"):
+            chars.insert(0, text[i])
+            i -= 1
+
+        if include_whole:
+            chars_after = []
+            i = self.editor.textCursor().position()
+            while i < len(text) and (text[i].isalnum() or text[i] == "_"):
+                chars_after.append(text[i])
+                i += 1
+            return "".join(chars), "".join(chars_after)
+        
+        return "".join(chars), ""
+
     def eventFilter(self, widget, event):
         if event.type() != QEvent.KeyPress or not self.suggestion_shown:
             return False
@@ -69,11 +92,11 @@ class EditorWindow(QMainWindow):
             if self.selected_index < self.box_layout.count() - 1:
                 self.selected_index += 1
                 self.box_layout.itemAt(self.selected_index - 1).widget().setStyleSheet("background-color: transparent;")
-                self.box_layout.itemAt(self.selected_index).widget().setStyleSheet("background-color: blue;")
+                self.box_layout.itemAt(self.selected_index).widget().setStyleSheet("background-color: #99b4cf;")
             else:
                 self.selected_index = 0
                 self.box_layout.itemAt(self.box_layout.count() - 1).widget().setStyleSheet("background-color: transparent;")
-                self.box_layout.itemAt(self.selected_index).widget().setStyleSheet("background-color: blue;")
+                self.box_layout.itemAt(self.selected_index).widget().setStyleSheet("background-color: #99b4cf;")
             scroll_bar = self.box.verticalScrollBar()
             current_position = self.suggestion_height * self.selected_index
             if current_position > scroll_bar.value() + self.box.sizeHint().height() or current_position < scroll_bar.value():
@@ -83,27 +106,47 @@ class EditorWindow(QMainWindow):
             if self.selected_index > 0:
                 self.selected_index -= 1
                 self.box_layout.itemAt(self.selected_index + 1).widget().setStyleSheet("background-color: transparent;")
-                self.box_layout.itemAt(self.selected_index).widget().setStyleSheet("background-color: blue;")
+                self.box_layout.itemAt(self.selected_index).widget().setStyleSheet("background-color: #99b4cf;")
             else:
                 self.selected_index = self.box_layout.count() - 1
                 self.box_layout.itemAt(0).widget().setStyleSheet("background-color: transparent;")
-                self.box_layout.itemAt(self.selected_index).widget().setStyleSheet("background-color: blue;")
+                self.box_layout.itemAt(self.selected_index).widget().setStyleSheet("background-color: #99b4cf;")
             scroll_bar = self.box.verticalScrollBar()
             current_position = self.suggestion_height * self.selected_index
             if current_position > scroll_bar.value() + self.box.sizeHint().height() or current_position < scroll_bar.value():
                 scroll_bar.setValue(current_position)
             return True
         elif event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
+            symbol_before, _ = self.get_symbol_at_cursor(False)
+            for _ in range(len(symbol_before)):
+                self.editor.textCursor().deletePreviousChar()
+            self.inserted = True
             self.insert_text(self.box_layout.itemAt(self.selected_index).widget().text())
+            return True
+        elif event.key() == Qt.Key_Tab:
+
+            self.insert_text(self.box_layout.itemAt(self.selected_index).widget().text(), True)
             return True
         
         return QWidget.eventFilter(self, widget, event)
 
     def insert_text(self, text, replace=False):
-        if not replace:
-            self.suggestion_shown = False
-            self.cursor_changed()
-            self.editor.textCursor().insertText(text)
+        temp = QTextDocument()
+        temp.setHtml(text)
+        self.inserted = True
+        self.suggestion_shown = False
+        self.cursor_changed()
+            
+        symbol_before, symbol_after = self.get_symbol_at_cursor(True)
+        self.editor.blockSignals(True)
+        for _ in range(len(symbol_before)):
+            self.editor.textCursor().deletePreviousChar()
+        if replace:
+            for _ in range(len(symbol_after)):
+                self.editor.textCursor().deleteChar()
+        self.editor.blockSignals(False)
+
+        self.editor.textCursor().insertText(temp.toPlainText())
 
     def cursor_changed(self):
         if self.suggestion_shown:
@@ -117,18 +160,60 @@ class EditorWindow(QMainWindow):
         self.box.move(max(self.cursorRect.x() - self.box_width, 4), self.cursorRect.y() + menu_height + line_height + 2)
 
     def set_suggestions(self, suggestions):
+        self.selected_index = 0
         for i in reversed(range(self.box_layout.count())):
             widget = self.box_layout.itemAt(i).widget()
             self.box_layout.removeWidget(widget)
         for i, suggestion in enumerate(suggestions):
             label = QLabel(suggestion)
             if i == 0:
-                label.setStyleSheet("background-color: blue")
+                label.setStyleSheet("background-color: #99b4cf")
             label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             label.setFont(self.font)
             self.box_layout.addWidget(label)
         self.box.setFixedSize(self.box_width, min(self.box_max_height, self.box_contents.sizeHint().height() + 2))
         self.box.setFocusPolicy(Qt.NoFocus)
+
+    def get_suggestion_set(self, search_term):
+        candidates = [*EditorWindow.DEFAULT_SUGGESTIONS]
+        added = []
+        output_start = []
+        for candidate in candidates:
+            if candidate.startswith(search_term):
+                output_start.append("<b style='color: #6e7099;'>" + candidate[:len(search_term)] + "</b>" + candidate[len(search_term):])
+                added.append(candidate)
+
+        output_contains = []
+        for candidate in candidates:
+            if candidate in added:
+                continue
+            if search_term in candidate:
+                index = candidate.index(search_term)
+                output_contains.append(candidate[:index] + "<b style='color: #6e7099;'>" + candidate[index:index+len(search_term)] + "</b>" + candidate[index+len(search_term):])
+                added.append(candidate)
+
+        output_fuzzy = []
+        for candidate in candidates:
+            if candidate in added:
+                continue
+            current_index = 0
+            indices = []
+            is_match = True
+            for letter in search_term:
+                found_index = candidate[current_index:].find(letter)
+                if found_index == -1:
+                    is_match = False
+                    break
+                indices.append(found_index + current_index)
+                current_index = found_index
+            if is_match:
+                listed = list(candidate)
+                for index in reversed(indices):
+                    listed.insert(index + 1, "</b>")
+                    listed.insert(index, "<b style='color: #6e7099;'>")
+                output_fuzzy.append("".join(listed))
+
+        return [*output_start, *output_contains, *output_fuzzy]
 
     def setup_menu(self):
         menu_bar = self.menuBar()
@@ -200,6 +285,25 @@ class EditorWindow(QMainWindow):
 
     def check(self):
         self.check_brackets()
+        self.check_suggestions()
+
+    def check_suggestions(self):
+        if self.inserted:
+            self.inserted = False
+            return
+
+        self.suggestion_shown = False
+        self.cursor_changed()
+
+        symbol_before, _ = self.get_symbol_at_cursor()
+
+        suggestions = []
+        if symbol_before != "":
+            suggestions = self.get_suggestion_set(symbol_before)
+            self.set_suggestions(suggestions)
+
+        self.suggestion_shown = len(suggestions) > 0
+        self.cursor_changed()
 
     def check_brackets(self):
         brackets = {"(": ")", "[": "]", "{": "}", "\"": "\"", "'": "'"}
